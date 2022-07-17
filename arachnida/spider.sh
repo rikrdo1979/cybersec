@@ -1,41 +1,38 @@
 #!/bin/bash
 
-# Comprueba 
-# PATH="./data/"
-# [ ! -d "./data" ] && mkdir $PATH
-# cd data
-
-IMGFILE="img.txt"
-LINKFILE="href.txt"
-
 # Get console options 
 
 while getopts "r:l:p:" FLAG
 do
 	case "${FLAG}" in
 	r)
-		# Descarga de forma recursiva las imagenes de la URL pasada
-		
-		echo "pasaste -r"
+		LINK="${OPTARG}"
+		echo "la URL es: $LINK"
 		;;
 	l)
-		# Nivel de profundidad de la descarga. Default = 5
-		
-		echo "pasaste -l"
+		DEEPNESS="${OPTARG}"
+		echo "El nivel de recursividad es: $DEEPNESS"
 		;;
 	p)
-		# Indica la ruta donde se guardarán los archivos descargados. Default = ./data/
-		
-		echo "pasaste -p"
+		if [ -z "${OPTARG}" ]; then
+			SAVE_PATH="./data"
+			echo "el path es ./data"
+		else
+			SAVE_PATH="${OPTARG}"
+			echo "*** el path es: $SAVE_PATH"
+			[ ! -d "$SAVE_PATH" ] && mkdir -p "$SAVE_PATH"
+		fi
 		;;
-	*)	
-	
-		# Si faltan parametros mensaje de error
-		
-		echo "Error faltan parámetros"
+	*)	echo "opcion invalida"
 		;;
 	esac
 done
+	# Controla modificadores inexistentes
+	shift $(($OPTIND - 1))
+	set +x
+
+IMGFILE="img.txt"
+LINKFILE="href.txt"
 
 # Search and list href hiperlinks
 
