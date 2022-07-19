@@ -49,17 +49,34 @@ DEEP=1
 curl -sSL $LINK | tr "\t\r\n'" '   "' | \
     grep -i -o '<a[^>]\+href[ ]*=[ \t]*"\(ht\|f\)tps\?:[^"]\+"' | \
 	    sed -e 's/^.*"\([^"]\+\)".*$/\1/g' | cut -d "?" -f1 | sort | uniq > $LINKFILE.$DEEP.$EXT_TXT
+
+curl -sSL  $LINK | grep ".jpg\|.jpeg\|.png\|.gif\|.bmp" \
+	| awk -F '<img' '{print $2}' | awk -F 'src=' '{print $2}' \
+		| cut -d '"' -f2 | cut -d "?" -f1 | awk 'NF''{print $1}' \
+			| grep "http" > $IMGFILE
+
 N=2
 while [ $N -le $DEEPNESS ]
 	do
 		for line in $(cat $LINKFILE.$DEEP.$EXT_TXT)
-		do curl -sSL $line | tr "\t\r\n'" '   "' | \
-		 grep -i -o '<a[^>]\+href[ ]*=[ \t]*"\(ht\|f\)tps\?:[^"]\+"' | \
+		do 
+		curl -sSL $line | tr "\t\r\n'" '   "' | \
+			grep -i -o '<a[^>]\+href[ ]*=[ \t]*"\(ht\|f\)tps\?:[^"]\+"' | \
 			 sed -e 's/^.*"\([^"]\+\)".*$/\1/g' | cut -d "?" -f1 | sort | uniq >> $LINKFILE.$N.$EXT_TXT
-		done	
+		
+		curl -sSL  $line | grep ".jpg\|.jpeg\|.png\|.gif\|.bmp" \
+			| awk -F '<img' '{print $2}' | awk -F 'src=' '{print $2}' \
+				| cut -d '"' -f2 | cut -d "?" -f1 | awk 'NF''{print $1}' \
+					| grep "http" >> $IMGFILE
+		done
 		DEEP="$N"
        (( N++ ))
 done
+
+DEEP=1
+N=2
+
+cp $IMGFILE $SAVE_PATH
 
 # Create img directory if not exist and follow
 
@@ -67,14 +84,7 @@ cd "$SAVE_PATH"
 
 # Find img sources recusively and create a list in a file
 
-curl -sSL  $LINK | grep ".jpg\|.jpeg\|.png\|.gif\|.bmp" \
-	| awk -F '<img' '{print $2}' | awk -F 'src=' '{print $2}' \
-		| cut -d '"' -f2 | cut -d "?" -f1 | awk 'NF''{print $1}' \
-			| grep "http" > $IMGFILE
-
 # Copy img list file to parent dir
-
-cp $IMGFILE $SRC_PATH
 
 # Iterate each line in the file and download the file
 
@@ -87,7 +97,3 @@ for line in $(cat $IMGFILE)
 rm $IMGFILE
 
 cd $SRC_PATH
-
-
-
-
