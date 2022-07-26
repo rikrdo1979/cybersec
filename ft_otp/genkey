@@ -24,6 +24,7 @@ import binascii
 #     BOLD = '\033[1m'
 #     UNDERLINE = '\033[4m'
 
-new_key = binascii.b2a_hex(os.urandom(30))
+new_key = binascii.b2a_hex(os.urandom(32))
+f_key = new_key[1:]
 
-print("64 BITS HEX KEY: \033[1m", str(new_key, 'utf-8'),"\033[0m")
+print(str(f_key, 'utf-8'))
