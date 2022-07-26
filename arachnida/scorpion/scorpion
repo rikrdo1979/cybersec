@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+__author__ = "rikrdo"
+__copyright__ = "Copyright 2022, Bootcamp Cybersec "
+__credits__ = ["rikrdo"]
+__license__ = "GPL"
+__version__ = "1.0.1"
+__maintainer__ = "rikrdo"
+__email__ = "rikrdo@rikrdo.es"
+__status__ = "Production"
+
+from PIL import Image
+from PIL.ExifTags import TAGS
+import sys
+import docx
+from PyPDF2 import PdfFileReader
+
+def read_exif(filename):
+    # path to the image
+    # read the image data using PIL
+    image = None
+    image = Image.open(filename)
+    # extract other basic metadata
+    info_dict = {
+        "Filename": image.filename,
+        "Image Size": image.size,
+        "Image Height": image.height,
+        "Image Width": image.width,
+        "Image Format": image.format,
+        "Image Mode": image.mode,
+        "Image is Animated": getattr(image, "is_animated", False),
+        "Frames in Image": getattr(image, "n_frames", 1)
+    }
+    for label,value in info_dict.items():
+        print(f"{label:25}: {value}")
+    # extract EXIF data
+    exifdata = image.getexif()
+    # iterating over all EXIF data fields
+    for tag_id in exifdata:
+        # get the tag name, instead of human unreadable tag id
+        tag = TAGS.get(tag_id, tag_id)
+        data = exifdata.get(tag_id)
+        # decode bytes 
+        if isinstance(data, bytes):
+            data = data.decode()
+        print(f"{tag:25}: {data}")
+
+    return(True)
+
+def read_docx(filename):
+    # path to the doc
+    document = docx.Document(docx = filename)
+    #assign properties to a var
+    core_properties = document.core_properties
+
+    # List core properties
+    print("\033[96mAuthor:\033[0m ", core_properties.author)
+    print("\033[96mCreated:\033[0m ", core_properties.created)
+    print("\033[96mModified by:\033[0m ",core_properties.last_modified_by)
+    print("\033[96mPrinted:\033[0m ", core_properties.last_printed)
+    print("\033[96mModified:\033[0m ", core_properties.modified)
+    print("\033[96mRevision:\033[0m ", core_properties.revision)
+    print("\033[96mTitle:\033[0m ", core_properties.title)
+    print("\033[96mCategory:\033[0m ", core_properties.category)
+    print("\033[96mComments:\033[0m ", core_properties.comments)
+    print("\033[96mIdentifier:\033[0m ", core_properties.identifier)
+    print("\033[96mKeywords:\033[0m ", core_properties.keywords)
+    print("\033[96mLanguage :\033[0m ", core_properties.language)
+    print("\033[96mSubject:\033[0m ", core_properties.subject)
+    print("\033[96mVersion:\033[0m ", core_properties.version)
+    print("\033[96mStatus:\033[0m ", core_properties.content_status)
+    return(True)
+
+def read_pdf(filename):
+    with open(filename, 'rb') as f:
+        pdf = PdfFileReader(f)
+        info = pdf.getDocumentInfo()
+        number_of_pages = pdf.getNumPages()
+
+    print("\033[91mAuthor: \033[0m", info.author)
+    print("\033[91mCreator: \033[0m", info.creator)
+    print("\033[91mProducer: \033[0m", info.producer)
+    print("\033[91mSubject: \033[0m", info.subject)
+    print("\033[91mTitle: \033[0m", info.title)
+    print("\033[91mPages: \033[0m", number_of_pages)
+    return(True)
+
+def main():
+    arg = sys.argv
+    if len(arg) > 1: 
+        del arg[0]
+        for filename in arg:
+            ext = filename.split(".")[-1]
+            print(" --- \n\033[1mFile:\033[0m \033[95m" + filename + "\033[0m \n --- ")
+            if ext == "docx":
+                read_docx(filename)
+            elif ext == "pdf":
+                read_pdf(filename)
+            else:
+                read_exif(filename)
+    else:
+        print("We need at least 1 argument! Try again.")
+
+if __name__=="__main__":
+    main()

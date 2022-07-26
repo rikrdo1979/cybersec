@@ -1,0 +1,142 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+__author__ = "rikrdo"
+__copyright__ = "Copyright 2022, Bootcamp Cybersec "
+__credits__ = ["rikrdo"]
+__license__ = "GPL"
+__version__ = "1.0.1"
+__maintainer__ = "rikrdo"
+__email__ = "rikrdo@rikrdo.es"
+__status__ = "Production"
+
+from requests_html import HTMLSession
+import argparse
+import requests
+import re
+import os
+from tqdm import tqdm
+from time import sleep
+ 
+# class bcolors:
+#     HEADER = '\033[95m'
+#     OKBLUE = '\033[94m'
+#     OKCYAN = '\033[96m'
+#     OKGREEN = '\033[92m'
+#     WARNING = '\033[93m'
+#     FAIL = '\033[91m'
+#     ENDC = '\033[0m'
+#     BOLD = '\033[1m'
+#     UNDERLINE = '\033[4m'
+
+session = HTMLSession()
+
+headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0' } 
+
+# save given image to given src
+
+def save_img(src, dirpath):
+    if not os.path.isdir(dirpath):
+        print('\n\033[93mThe directory is not present. Creating a new one.\033[0m')
+        os.mkdir(dirpath)
+    else:
+        print('\n\033[93mThe directory is present.\033[0m')
+    for img in src:
+        filename = img.split("/")[-1]
+        ext = img.split(".")[-1]
+        if ext == "pdf" or ext == "docx":
+            print("\n\033[91m["+ ext +"] \033[0m " + filename + "\n")
+        else:
+            print("\n\033[96m["+ ext +"] \033[0m " + filename + "\n")
+        response = requests.get(img, stream = True)
+        response.raw.decode_content = True
+        for i in tqdm(range(0, 100)):
+            with open(f'{dirpath}{filename}', 'wb') as imgfile:
+                imgfile.write(response.content)
+            sleep(.005)
+    return(True)
+
+# save sanitized href to a file
+
+def save_html(crawl, i, dirpath):
+    filename = "href"+str(i)+".txt"
+    for url in crawl:
+        with open(f'{dirpath}{filename}', 'a') as linkfile:
+            linkfile.write(url+"\n")
+    print("\n\033[93mUrl's & Pictures Saved \033[0m\n")
+    return(True)
+
+# find links depending given level
+
+def find_links(crawl, i, dirpath):
+    i = int(i)
+    proto = crawl[0].split("/")[0]
+    to_set = set()
+    im_set = set()
+    im_list = []
+
+    while i > 0:
+        for lines in crawl:
+            r = session.get(lines)
+            for url in r.html.links:
+                url = url.replace(" ", "%20")
+                if url[0] == '/':
+                    uri = lines.split('/')[2]
+                    url = proto + "//" + uri + url
+                elif url.startswith(proto):
+                    url = url
+                else:
+                    continue
+                print("\033[1;32m[url] \033[0m " + url)
+                to_set.add(url)
+                crawl = list(to_set)
+            for images in re.findall('http*.?://[^"][^" "]*.(?:\.png|\.jpeg|\.jpg|\.gif|\.bmp|\.pdf|.\docx)', r.html.html):
+                if images[0] == '/':
+                    uri_img = images.split('/')[2]
+                    uri_img = proto + "//" + uri_img + images
+                    im_set.add(uri_img)
+                else:
+                    im_set.add(images)
+                    im_list = list(im_set)
+        save_img(im_list, dirpath)
+        save_html(crawl, i, dirpath)
+        i = i -1
+    else:
+        return(crawl)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-r")
+    parser.add_argument("-l")
+    parser.add_argument("-p")
+
+    args = parser.parse_args()
+
+    if args.r:
+        domain = args.r
+    else:
+        domain = "https://google.es"
+
+    if args.l:
+        if int(args.l) > 5:
+            i = 5
+        else:
+            i = args.l
+    else:
+        i = 5
+    if args.p:
+        dirpath = args.p
+    else:
+        dirpath = "./data/"
+
+    print("\n\033[93m ---------------------------------------------------------------- \033[0m\n")
+    print (" URL:\t\033[1m"+ domain + "\033[0m")
+    print (" Deep:\t\033[1m"+ str(i) + "\033[0m")
+    print (" Path:\t\033[1m"+ dirpath + "\033[0m")
+    print("\n\033[93m ---------------------------------------------------------------- \033[0m\n")
+    find_links([domain], i, dirpath)
+
+# Using the special variable 
+# __name__
+if __name__=="__main__":
+    main()
