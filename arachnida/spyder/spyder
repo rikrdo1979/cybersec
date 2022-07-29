@@ -10,30 +10,18 @@ __maintainer__ = "rikrdo"
 __email__ = "rikrdo@rikrdo.es"
 __status__ = "Production"
 
-from requests_html import HTMLSession
-import argparse
-import requests
-import re
-import os
+# required libraries
+
+import argparse, requests, re, os, urllib
 from tqdm import tqdm
+from requests_html import HTMLSession
 from time import sleep
- 
-# class bcolors:
-#     HEADER = '\033[95m'
-#     OKBLUE = '\033[94m'
-#     OKCYAN = '\033[96m'
-#     OKGREEN = '\033[92m'
-#     WARNING = '\033[93m'
-#     FAIL = '\033[91m'
-#     ENDC = '\033[0m'
-#     BOLD = '\033[1m'
-#     UNDERLINE = '\033[4m'
 
 session = HTMLSession()
 
 headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0' } 
 
-# save given image to given src
+# save given image/file to given src
 
 def save_img(src, dirpath):
     if not os.path.isdir(dirpath):
@@ -42,19 +30,21 @@ def save_img(src, dirpath):
     else:
         print('\n\033[93mThe directory is present.\033[0m')
     for img in src:
-        filename = img.split("/")[-1]
-        ext = img.split(".")[-1]
-        if ext == "pdf" or ext == "docx":
-            print("\n\033[91m["+ ext +"] \033[0m " + filename + "\n")
-        else:
-            print("\n\033[96m["+ ext +"] \033[0m " + filename + "\n")
-        response = requests.get(img, stream = True)
-        response.raw.decode_content = True
-        for i in tqdm(range(0, 100)):
-            with open(f'{dirpath}{filename}', 'wb') as imgfile:
-                imgfile.write(response.content)
-            sleep(.005)
-    return(True)
+        try:
+            filename = img.split("/")[-1]
+            ext = img.split(".")[-1]
+            if ext == "pdf" or ext == "docx":
+                print("\n\033[91m["+ ext +"] \033[0m " + filename + "\n")
+            else:
+                print("\n\033[96m["+ ext +"] \033[0m " + filename + "\n")
+            response = requests.get(src[0], headers=headers, verify='certs.pem', stream = True)
+            response.raw.decode_content = True
+            for i in tqdm(range(0, 100)):
+                with open(f'{dirpath}{filename}', 'wb') as imgfile:
+                    imgfile.write(response.content)
+                sleep(.005)
+        except requests.exceptions.RequestException as e:
+            print("\033[91m[error] \033[0m ", e.__dict__)
 
 # save sanitized href to a file
 
@@ -64,7 +54,6 @@ def save_html(crawl, i, dirpath):
         with open(f'{dirpath}{filename}', 'a') as linkfile:
             linkfile.write(url+"\n")
     print("\n\033[93mUrl's & Pictures Saved \033[0m\n")
-    return(True)
 
 # find links depending given level
 
@@ -77,32 +66,47 @@ def find_links(crawl, i, dirpath):
 
     while i > 0:
         for lines in crawl:
-            r = session.get(lines)
-            for url in r.html.links:
-                url = url.replace(" ", "%20")
-                if url[0] == '/':
+            try:
+                r = session.get(lines)
+                for url in r.html.links:
+                    url = url.replace(" ", "%20")
                     uri = lines.split('/')[2]
-                    url = proto + "//" + uri + url
-                elif url.startswith(proto):
-                    url = url
-                else:
-                    continue
-                print("\033[1;32m[url] \033[0m " + url)
-                to_set.add(url)
-                crawl = list(to_set)
-            for images in re.findall('http*.?://[^"][^" "]*.(?:\.png|\.jpeg|\.jpg|\.gif|\.bmp|\.pdf|.\docx)', r.html.html):
-                if images[0] == '/':
-                    uri_img = images.split('/')[2]
-                    uri_img = proto + "//" + uri_img + images
-                    im_set.add(uri_img)
-                else:
+                    if url[0] == '/':
+                        url = proto + "//" + uri + url
+                    elif url.startswith(proto):
+                        url = url
+                    else:
+                        continue
+                    print("\033[1;32m[url] \033[0m " + url)
+                    to_set.add(url)
+                    crawl = list(to_set)
+            except requests.exceptions.RequestException as e:
+                print("\033[91m[error] \033[0m ", e.__dict__)
+            try:
+                response = urllib.request.urlopen(lines)
+                for images in re.findall('(http)?s?:?(\/\/[^"]*\.(?:png|jpeg|jpg|gif|bmp|pdf|docx))', str(response.read())):
+                    images = 'https:' + images[1]
                     im_set.add(images)
                     im_list = list(im_set)
+            except urllib.error.HTTPError as e:
+                print("\033[91m[error] \033[0m ", e.__dict__)
+            except urllib.error.URLError as e:
+                print("\033[91m[error] \033[0m ", e.__dict__)
         save_img(im_list, dirpath)
         save_html(crawl, i, dirpath)
         i = i -1
     else:
         return(crawl)
+
+# pretty script end after ctrl + c
+
+def exit_gracefully():
+    print('\033[91m\n\n------------------------\n\n   @@@ Bye Bye!!! @@@\n\n------------------------\033[0m')
+
+# collect arguments:
+# -r = url ("http://www.example.com/")
+# -l = deepness level (default 5)
+# -p = path (default "./data/")
 
 def main():
     parser = argparse.ArgumentParser()
@@ -116,7 +120,6 @@ def main():
         domain = args.r
     else:
         domain = "https://google.es"
-
     if args.l:
         if int(args.l) > 5:
             i = 5
@@ -136,7 +139,10 @@ def main():
     print("\n\033[93m ---------------------------------------------------------------- \033[0m\n")
     find_links([domain], i, dirpath)
 
-# Using the special variable 
-# __name__
 if __name__=="__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        exit_gracefully()
