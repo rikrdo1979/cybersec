@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+__author__ = "rikrdo"
+__copyright__ = "Copyright 2022, Bootcamp Cybersec "
+__credits__ = ["rikrdo"]
+__license__ = "GPL"
+__version__ = "1.0.1"
+__maintainer__ = "rikrdo"
+__email__ = "rikrdo@rikrdo.es"
+__status__ = "Production"
+
+import base64, os, argparse, hmac, struct, hashlib, time, io, qrcode
+from cryptography.fernet import Fernet
+from time import sleep
+
+# encrypt files
+def encrypt(filename):
+    key = '2j3XrJLoNkrAzI0GCRl5IvAgCJPxgPxWI5QfCV8AZkY=%'
+    
+    fernet = Fernet(key)
+
+    with open(filename, 'rb') as files:
+      	original = files.read()
+
+    encrypted = fernet.encrypt(original)
+
+    with open(filename, 'wb') as encrypted_files:
+       	encrypted_files.write(encrypted)
+
+# save the given key in a file
+def save_key(key, filename):
+    key = base64.b32encode(bytes(key, encoding='utf-8'))
+    f = open(filename, 'w')
+    f.write(str(key, 'utf-8'))
+    f.close()
+    f.closed
+    print('New Key:\033[1m', str(key, 'utf-8'), '\033[0m')
+    qr = qrcode.QRCode()
+    qr.add_data(str(key, 'utf-8'))
+    f = io.StringIO()
+    qr.print_ascii(out=f)
+    f.seek(0)
+    print(f.read())
+    sleep(.5)
+    encrypt(filename)
+
+def get_hotp_token(secret, interval):
+
+    key = base64.b32decode(secret, True)
+    print('key: ',key)
+    #decoding our key
+    msg = struct.pack(">Q", interval)
+    print('msg :', msg)
+    #conversions between Python values and C structs represente
+    h = hmac.new(key, msg, hashlib.sha1).digest()
+    print('h: ', h)
+    o =  h[19] & 15
+    print('o: ', o)
+    #Generate a hash using both of these. Hashing algorithm is HMAC
+    h = (struct.unpack(">I", h[o:o+4])[0] & 0x7fffffff) % 1000000
+    print('h: ', h)
+    #unpacking
+    return h
+
+def get_totp_token(secret):
+    # integer of: unix time date now / 30 seconds
+    print('time: ', time.time()) 
+    interval=int((time.time())//30)
+    print('intervalo: ', interval)
+    # interval, we ensure to give the same otp for 30 seconds
+    x =str(get_hotp_token(secret,interval))
+    print('x: ', x)
+    #adding 0 in the beginning till OTP has 6 digits
+    while len(x) != 6:
+        x += '0'
+    return x
+
+def get_file(filename):
+    # should be a base64 encoded key
+    f = open(filename, "r")
+    get_totp_token(f.read())
+    encrypt(filename)
+        
+# decrypt files
+def decrypt(filename):
+    if os.path.isfile('./'+filename):
+        key = '2j3XrJLoNkrAzI0GCRl5IvAgCJPxgPxWI5QfCV8AZkY=%'
+
+        fernet = Fernet(key)
+
+        with open(filename, 'rb') as enc_file:
+            encrypted = enc_file.read()
+
+        decrypted = fernet.decrypt(encrypted)
+
+        with open(filename, 'wb') as dec_file:
+            dec_file.write(decrypted)
+ 
+        get_file(filename)
+    else:
+        print('\033[91m\t[', filename, '] Is not a encrypted file \u2716\033[0m')
+
+def main(): 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-g', help = 'keep the given ex64 key in a encrypted file')
+    parser.add_argument('-k', action = 'store_true' ,help = 'show temporary password')
+    parser.add_argument('-f', default= 'ft_otp.key' ,help='save the key in the given filename')
+    args = parser.parse_args()  
+    
+    key = args.g
+    filename = args.f
+    
+    if args.g:
+        save_key(key, filename)
+    if args.k:
+        decrypt(filename)
+
+if __name__=='__main__':
+    main()

