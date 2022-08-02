@@ -12,7 +12,7 @@ error_reporting(E_ALL);
 		<!-- Basic Page Needs
 			–––––––––––––––––––––––––––––––––––––––––––––––––– -->
 		<meta charset="utf-8">
-		<title>Your page title here :)</title>
+		<title>Image EXIF Edit</title>
 		<meta name="description" content="">
 		<meta name="author" content="">
 		<!-- Mobile Specific Metas
@@ -36,7 +36,7 @@ error_reporting(E_ALL);
 
       if (isset($_POST['bartist'])) {
         $o = null;
-        $cartist = "exiftool -artist='".$_POST['artist']."' ./img/".$image;
+        $cartist = "exiftool -overwrite_original -artist='".$_POST['artist']."' ./img/".$image;
         exec($cartist, $o, $co);
         if ($o != null){header("Refresh:0");}        
       } 
@@ -48,7 +48,7 @@ error_reporting(E_ALL);
 
       if (isset($_POST['bcredit'])) {
         $o1 = null;
-        $ccredit = "exiftool -credit='".$_POST['credit']."' ./img/".$image;
+        $ccredit = "exiftool -overwrite_original -credit='".$_POST['credit']."' ./img/".$image;
         exec($ccredit, $o1, $co1);  
         if ($o1 != null){header("Refresh:0");}    
       } 
@@ -60,7 +60,7 @@ error_reporting(E_ALL);
       
       if (isset($_POST['bcomment'])) {
         $o2 = null;
-        $ccomment = "exiftool -comment='".$_POST['comment']."' ./img/".$image;
+        $ccomment = "exiftool -overwrite_original -comment='".$_POST['comment']."' ./img/".$image;
         exec($ccomment, $o2, $co2);  
         if ($o2 != null){header("Refresh:0");}    
       } 

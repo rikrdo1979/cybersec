@@ -10,7 +10,7 @@
 		<!-- Basic Page Needs
 			–––––––––––––––––––––––––––––––––––––––––––––––––– -->
 		<meta charset="utf-8">
-		<title>Image EXIF Read/Write</title>
+		<title>Image EXIF List</title>
 		<meta name="description" content="">
 		<meta name="author" content="">
 		<!-- Mobile Specific Metas

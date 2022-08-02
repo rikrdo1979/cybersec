@@ -9,7 +9,7 @@
 		<!-- Basic Page Needs
 			–––––––––––––––––––––––––––––––––––––––––––––––––– -->
 		<meta charset="utf-8">
-		<title>Your page title here :)</title>
+		<title>Image EXIF Clean</title>
 		<meta name="description" content="">
 		<meta name="author" content="">
 		<!-- Mobile Specific Metas
