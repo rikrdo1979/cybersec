@@ -1,0 +1,48 @@
+
+<article class="not-found" data-seres-role="not-found">
+  <section class="not-found__content">
+    <h1 class="not-found__title">Error code: <strong>404</strong></h1>
+    <article class="not-found__description">
+      <p>Es muy raro que pase esto, pero no hemos encontrado la página que buscas.<br/>Haz click <a href="https://www.42barcelona.com" title="Volver al inicio">aquí</a> para volver al inicio.</p>
+    </article>
+  </section>
+</article>
+
+
+       <script type="text/javascript">
+            jQuery(document).ready(function () {
+                jQuery.cookieBar();
+            });
+        </script>
+
+        <script type="text/javascript">
+            if (getCookie("cookie_rgpd") == 1) {
+                (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src= '//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f); })(window,document,'script','dataLayer','GTM-P9MF6B5');
+
+setTimeout(function(){var a=document.createElement('script');
+var b=document.getElementsByTagName('script')[0];
+a.src=document.location.protocol+'//script.crazyegg.com/pages/scripts/0057/6919.js?'+Math.floor(new Date().getTime()/3600000);
+a.async=true;a.type='text/javascript';b.parentNode.insertBefore(a,b)}, 1);            }
+            else {
+                //ELIMINAMOS LAS COOKIES.
+                var i, cookieValue = '', aCookie, aCookies = document.cookie.split('; ');
+                for (i = 0; i < aCookies.length; i++) {
+                    aCookie = aCookies[i].split('=');
+                    if ( aCookie[0] != 'cookie_rgpd' && aCookie[0] != '_ga' && aCookie[0] != '_gat'
+                        && aCookie[0] != '__utma' && aCookie[0] != '__utmb' && aCookie[0] != '__utmc'
+                        && aCookie[0] != '__utmt' && aCookie[0] != '__utmz' && aCookie[0].indexOf("wordpress_") != 0) {
+                        document.cookie = aCookie[0] + '=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/;';
+                    }
+                }
+            }
+            (function ($) {
+                function llamarFunciones(){
+                    //* llamamos a la funciones para publicar twitter y facebook *//
+                                    }
+
+            })(jQuery);
+        </script>
+        
+</body>
+
+</html>
