@@ -55,7 +55,6 @@ def save_key(key, filename, enc_key, flag):
     sleep(.5)
     encrypt(filename, enc_key, flag)
     
-# token logic HMAC   
 def totp(key, interval):
     key = bytes.fromhex(key)
     """ Calculate TOTP using time and key """
@@ -105,14 +104,7 @@ def to_safe(enc_safe):
     key = base64.urlsafe_b64encode(kdf.derive(password))
     key = str(key, 'utf-8')
     return(key)
-
-def check_key(key):
-    secret = bytes(key, 'utf-8').hex()
-    if len(secret) < 64:
-        return(False)
-    else:
-        return(True)
-
+    
 def exit_gracefully():
     print('\033[91m\n\n------------------------\n\n   @@@ Bye Bye!!! @@@\n\n------------------------\033[0m')
     
@@ -131,25 +123,22 @@ def main():
     enc_key = '2j3XrJLoNkrAzI0GCRl5IvAgCJPxgPxWI5QfCV8AZkY=%'
     enc_safe = args.s
     flag = args.php
-
+    
     if args.s:
         print('\nVerified safe key: \033[1m\033[92m', to_safe(enc_safe),'\033[0m\033[0m\n')
     if args.g:
-        if (check_key(key)) == False:
-            print('\nYou key: \033[1m\033[91m', key,'\033[0m\033[0m has less than 64 characters, try again!\n')
+        if args.p:
+            passby = True
+            while passby:
+                enc_key = getpass.getpass(prompt = '\nPlease enter your password?: ')
+                if len(enc_key) < 16:
+                    print('Your password should be more than 16 characters!')
+                    passby = True
+                else:
+                    passby = False
+                    save_key(key, filename, enc_key, flag)
         else:
-            if args.p:
-                passby = True
-                while passby:
-                    enc_key = getpass.getpass(prompt = '\nPlease enter your password?: ')
-                    if len(enc_key) < 16:
-                        print('Your password should be more than 16 characters!')
-                        passby = True
-                    else:
-                        passby = False
-                        save_key(key, filename, enc_key, flag)
-            else:
-                save_key(key, filename, enc_key, flag)
+            save_key(key, filename, enc_key, flag)
     if args.k:
         if args.p:
             passby = True
