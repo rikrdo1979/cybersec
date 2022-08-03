@@ -10,22 +10,30 @@ __maintainer__ = "rikrdo"
 __email__ = "rikrdo@rikrdo.es"
 __status__ = "Production"
 
-import base64, os, argparse, hmac, time, io, qrcode
+import base64, os, argparse, hmac, time, io, qrcode, getpass
 from cryptography.fernet import Fernet
 from time import sleep
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 # encrypt files
-def encrypt(filename):
-    key = '2j3XrJLoNkrAzI0GCRl5IvAgCJPxgPxWI5QfCV8AZkY=%'
-    fernet = Fernet(key)
-    with open(filename, 'rb') as files:
-      	original = files.read()
-    encrypted = fernet.encrypt(original)
-    with open(filename, 'wb') as encrypted_files:
-       	encrypted_files.write(encrypted)
+def encrypt(filename, enc_key):
+    try:
+        key = enc_key
+        print
+        fernet = Fernet(key)
+        with open(filename, 'rb') as files:
+          	original = files.read()
+        encrypted = fernet.encrypt(original)
+        with open(filename, 'wb') as encrypted_files:
+           	encrypted_files.write(encrypted)
+    except:
+        print('\033[91mFAIL! Your encryption key must be 32 url-safe base64-encoded bytes. ex. ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg=\033[0m\n')
+        print('Try with something like this: \033[1m\033[92m', to_safe(enc_key),'\033[0m\033[0m\n')
+        main()
 
 # save the given key in a file
-def save_key(key, filename):
+def save_key(key, filename, enc_key):
     secret = bytes(key, 'utf-8').hex()
     f = open(filename, 'w')
     f.write(secret)
@@ -42,7 +50,7 @@ def save_key(key, filename):
     f.seek(0)
     print(f.read())
     sleep(.5)
-    encrypt(filename)
+    encrypt(filename, enc_key)
     
 def totp(key, interval):
     key = bytes.fromhex(key)
@@ -56,36 +64,90 @@ def totp(key, interval):
     return "{:06d}".format(code)
        
 # decrypt files
-def decrypt(filename):
-    if os.path.isfile('./'+filename):
-        key = '2j3XrJLoNkrAzI0GCRl5IvAgCJPxgPxWI5QfCV8AZkY=%'
+def decrypt(filename, enc_key):
+    try:
+        if os.path.isfile('./'+filename):
+            key = enc_key
 
-        fernet = Fernet(key)
+            fernet = Fernet(key)
 
-        with open(filename, 'rb') as enc_file:
-            encrypted = enc_file.read()
+            with open(filename, 'rb') as enc_file:
+                encrypted = enc_file.read()
 
-        decrypted = fernet.decrypt(encrypted)
-        interval = 30
-        key = (decrypted.decode('UTF-8'))
-        print('Temporary Key (',str(interval),' secs ): ', totp(key, interval))
-    else:
-        print('\033[91m\t[', filename, '] Is not a encrypted file \u2716\033[0m')
-
+            decrypted = fernet.decrypt(encrypted)
+            interval = 30
+            key = (decrypted.decode('UTF-8'))
+            print('\nTemporary Key (',str(interval),' secs ): \033[1m\033[92m', totp(key, interval),'\033[0m\033[0m')
+        else:
+            if os.path.isfile('./'+filename) == False:
+                print('\033[91m\t[', filename, '] File not exist, first, you need to create a key file! \u2716\033[0m')
+            else:
+                print('\033[91m\t[', filename, '] Unencrypted File! \u2716\033[0m')
+    except:
+        print('\n\033[91m\u2718 \033[0m Wrong Password!')
+        
+def to_safe(enc_safe):
+    password = bytes(enc_safe, 'utf-8')
+    salt = os.urandom(16)
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=390000,
+    )
+    key = base64.urlsafe_b64encode(kdf.derive(password))
+    key = str(key, 'utf-8')
+    return(key)
+    
+def exit_gracefully():
+    print('\033[91m\n\n------------------------\n\n   @@@ Bye Bye!!! @@@\n\n------------------------\033[0m')
+    
 def main(): 
     parser = argparse.ArgumentParser()
     parser.add_argument('-g', help = 'keep the given ex64 key in a encrypted file')
-    parser.add_argument('-k', action = 'store_true' ,help = 'show temporary password')
+    parser.add_argument('-k', action = 'store_true' ,help = 'show temporary token')
     parser.add_argument('-f', default= 'ft_otp.key' ,help='save the key in the given filename')
+    parser.add_argument('-p', action = 'store_true' , help='ask to introduce your favorite key')
+    parser.add_argument('-s', help='encode a URL-safe string in base64')
     args = parser.parse_args()  
     
     key = args.g
     filename = args.f
+    enc_key = '2j3XrJLoNkrAzI0GCRl5IvAgCJPxgPxWI5QfCV8AZkY=%'
+    enc_safe = args.s
     
+    if args.s:
+        print('\nVerified safe key: \033[1m\033[92m', to_safe(enc_safe),'\033[0m\033[0m\n')
     if args.g:
-        save_key(key, filename)
+        if args.p:
+            passby = True
+            while passby:
+                enc_key = getpass.getpass(prompt = '\nPlease enter your password?: ')
+                if len(enc_key) < 16:
+                    print('Your password should be more than 16 characters!')
+                    passby = True
+                else:
+                    passby = False
+                    save_key(key, filename, enc_key)
+        else:
+            save_key(key, filename, enc_key)
     if args.k:
-        decrypt(filename)
+        if args.p:
+            passby = True
+            while passby:
+                enc_key = getpass.getpass(prompt = '\nPlease enter your password?: ')
+                if len(enc_key) < 16:
+                    print('Your password should be more than 16 characters!')
+                    passby = True
+                else:
+                    passby = False
+                    decrypt(filename, enc_key)
+        else:
+            decrypt(filename, enc_key)
 
 if __name__=='__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('\n\n\n\033[91m\u2718 \033[0m Wrong Keyboard Combination!')
+        exit_gracefully()
