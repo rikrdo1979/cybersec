@@ -60,19 +60,19 @@
 								echo "HEX Output: <code>".$str."</code><br><br>";
 								echo "Lenght: <code>".$len."</code><br><br>";
 								$gettoken = exec('./ft_otp -k -php');
-								echo "Your Token: <code>".$gettoken."</code><br>";
 								$getqr = exec('./ft_otp -g "'.$phrase.'" -php');
 								$urldecod = "otpauth://totp/rikrdo@cybersec.es?secret=".$getqr."&issuer=ft_otp";
 								$urlencod = url_encode($urldecod);
 								echo '<center><img src="https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl='.$urlencod.'&choe=UTF-8" title="'.$urldecod.'" /></center>';
+								echo "<center><input type='button' class='button-primary' onclick='window.location.reload(); this.disabled = true; this.value = \"Procesando...\";' value='".$gettoken."'></input></center><br>";
 								}
 							else {
 								echo "<h3>Not valid, try again!</h3>";
 							}
 						}
 					?>
+					</div>
 				</div>
-			</div>
 		</div>
 	</body>
 </html>
