@@ -40,7 +40,7 @@ def save_img(src, dirpath):
             response = requests.get(img, headers=headers, verify='certs.pem', stream = True)
             response.raw.decode_content = True
             for i in tqdm(range(0, 100)):
-                with open(f'{dirpath}{filename}', 'wb') as imgfile:
+                with open((dirpath+filename), 'wb') as imgfile:
                     imgfile.write(response.content)
                 sleep(.005)
         except requests.exceptions.RequestException as e:
@@ -51,8 +51,8 @@ def save_img(src, dirpath):
 def save_html(crawl, i, dirpath):
     filename = "href"+str(i)+".txt"
     for url in crawl:
-        with open(f'{dirpath}{filename}', 'a') as linkfile:
-            linkfile.write(url+" ")
+        with open((dirpath+filename), 'a') as linkfile:
+            linkfile.write(url+"\n")
     print(" \033[93mUrl's & Pictures Saved \033[0m ")
 
 # find links depending given level
@@ -69,6 +69,7 @@ def find_links(crawl, i, dirpath):
             try:
                 r = session.get(lines)
                 for url in r.html.links:
+                    print('url: ',url)
                     url = url.replace(" ", "%20")
                     uri = lines.split('/')[2]
                     if url[0] == '/':
@@ -85,6 +86,7 @@ def find_links(crawl, i, dirpath):
                 continue
             try:
                 response = urllib.request.urlopen(lines)
+                #print('response: ',response.read())
                 for images in re.findall('(http)?s?:?(\/\/[^"]*\.(?:png|jpeg|jpg|gif|bmp|pdf|docx))', str(response.read())):
                     images = 'https:' + images[1]
                     im_set.add(images)
