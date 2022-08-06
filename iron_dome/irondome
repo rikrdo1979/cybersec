@@ -1,53 +1,43 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, sys, time, datetime
+import os, sys, time, datetime, logging
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import LoggingEventHandler
 
 def writedown(src_path, event):
-   dt = datetime.datetime.now()
-   current_datetime = dt.strftime("%d-%m-%Y - %H:%M:%S")
-   with open("irondome.log","a") as file:
-   	file.write(current_datetime+' - '+event+'\n')
-   	file.close()
-   return(True)
+    dt = datetime.datetime.now()
+    current_datetime = dt.strftime("%d-%m-%Y - %H:%M:%S")
+    with open("irondome.log","a") as file:
+        file.write(current_datetime+' - '+event+'\n')
+        file.close()
+    return(True)
 
-class MonitorFolder(FileSystemEventHandler):
-    FILE_SIZE=1000
-    
-    def on_created(self, event):
-         print(event.src_path, event.event_type)
-         event_created = event.src_path, event.event_type
-         writedown(src_path, str(event_created))
-         self.checkFolderSize(event.src_path)
-   
+class log_event(LoggingEventHandler):
     def on_modified(self, event):
-        print(event.src_path, event.event_type)
-        evento_modified = event.src_path, event.event_type
-        writedown(src_path, str(evento_modified))
-        self.checkFolderSize(event.src_path)
-                  
-    def checkFolderSize(self,src_path):
-        if os.path.isdir(src_path):
-            if os.path.getsize(src_path) >self.FILE_SIZE:
-                print("Time to backup the dir")
-        else:
-            if os.path.getsize(src_path) >self.FILE_SIZE:
-                print("very big file")
+        filename = event.src_path.split('/')[-1]
+        if event.event_type == 'modified':
+            print('Fichero Modificado:', filename)
+        elif event.event_type == 'deleted':
+            print('Fichero Eliminado', filename)
+        elif event.event_type == 'created':
+            print('Fichero Creado', filename)
 
 if __name__ == "__main__":
-    src_path = sys.argv[1]
-    
-    event_handler=MonitorFolder()
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%d-%m-%Y %H:%M:%S')
+    #path = sys.argv[1] if len(sys.argv) > 1 else '.'
+    path="/home/rikrdo/cybersec/iron_dome/logs"
+    event_handler = LoggingEventHandler()
+    #event_handler = log_event()
     observer = Observer()
-    observer.schedule(event_handler, path=src_path, recursive=True)
-    print("Monitoring started")
-    observer.start()
+    observer.schedule(event_handler, path, recursive=True)  
+    #Scheduling monitoring of a path with the observer instance and event handler. There is 'recursive=True' because only with it enabled, watchdog.observers.Observer can monitor sub-directories
+    observer.start()  
+    #for starting the observer thread
+
     try:
-        while(True):
-           time.sleep(1)
-           
-    except KeyboardInterrupt:
-            observer.stop()
-            observer.join()
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt: 
+        observer.stop()
+        observer.join()

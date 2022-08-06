@@ -1,7 +1,8 @@
 #!/bin/bash
 while true; do
 
-inotifywait -e modify,create,delete -r /path/to/your/dir && \
-echo "change" >> logfile.log
+evento=$(inotifywait -e modify,create,delete -r /home/rikrdo/cybersec/iron_dome/logs/) &&
+
+echo $evento >> logfile.log
 
 done
