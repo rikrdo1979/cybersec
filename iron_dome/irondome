@@ -6,38 +6,39 @@ from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 
 def writedown(src_path, event):
-    dt = datetime.datetime.now()
-    current_datetime = dt.strftime("%d-%m-%Y - %H:%M:%S")
-    with open("irondome.log","a") as file:
-        file.write(current_datetime+' - '+event+'\n')
-        file.close()
-    return(True)
+	dt = datetime.datetime.now()
+	current_datetime = dt.strftime("%d-%m-%Y - %H:%M:%S")
+	with open("irondome.log","a") as file:
+		file.write(current_datetime+' - '+event+'\n')
+		file.close()
+	return(True)
 
 class log_event(LoggingEventHandler):
-    def on_modified(self, event):
-        filename = event.src_path.split('/')[-1]
-        if event.event_type == 'modified':
-            print('Fichero Modificado:', filename)
-        elif event.event_type == 'deleted':
-            print('Fichero Eliminado', filename)
-        elif event.event_type == 'created':
-            print('Fichero Creado', filename)
+	def on_modified(self, event):
+		filename = event.src_path.split('/')[-1]
+		if event.is_directory:
+			print('Directory: ', filename, event.event_type)
+		else:
+			print('\tFile: ', filename, event.event_type)			
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%d-%m-%Y %H:%M:%S')
-    #path = sys.argv[1] if len(sys.argv) > 1 else '.'
-    path="/home/rikrdo/cybersec/iron_dome/logs"
-    event_handler = LoggingEventHandler()
-    #event_handler = log_event()
-    observer = Observer()
-    observer.schedule(event_handler, path, recursive=True)  
-    #Scheduling monitoring of a path with the observer instance and event handler. There is 'recursive=True' because only with it enabled, watchdog.observers.Observer can monitor sub-directories
-    observer.start()  
-    #for starting the observer thread
+	logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%d-%m-%Y %H:%M:%S')
+	#path = sys.argv[1] if len(sys.argv) > 1 else '.'
+	path="/home/rikrdo/github/cybersec/iron_dome/logs"
+	#event_handler = LoggingEventHandler()
+	event_handler = log_event()
+	observer = Observer()
+	observer.schedule(event_handler, path, recursive=True)  
+	#Scheduling monitoring of a path with the observer instance and event handler. There is 'recursive=True' because only with it enabled, watchdog.observers.Observer can monitor sub-directories
+	observer.start()  
+	#for starting the observer thread
 
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt: 
-        observer.stop()
-        observer.join()
+	try:
+		while True:
+			time.sleep(1)
+	except KeyboardInterrupt: 
+		observer.stop()
+		observer.join()
+
+
+# DirModifiedEvent: event_type=modified, src_path='/home/rikrdo/cybersec/iron_dome/logs', is_directory=True

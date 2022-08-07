@@ -1,0 +1,18 @@
+You can use the xxd command to transform a file in Vim to hex representation, doing
+
+:%!xxd
+
+: enters command-line mode, % matches whole file as a range, ! filters that range through an external command, xxd is that external shell command
+
+Giving an output like this, this is split into octet count/line (octets per line may be changed with parameter -c on xxd command), hex representation, and text representation:
+
+0000000: 5468 6973 2069 7320 6120 7465 7374 0a41  This is a test.A
+0000010: 6e6f 7468 6572 206c 696e 650a 416e 6420  nother line.And 
+0000020: 7965 7420 616e 6f74 6865 720a            yet another.
+Once you make the changes (in the hex part), you can go back to text with -r command on xxd, so
+
+:%!xxd -r
+
+This is a little rudimentary, though I like it in its simplicity and to keep in mind xxd, which is an interesting command line tool (I don't have to do a lot of work on hex, though). You can use some recipes to handle this transformation in a more automatic way like the one described in Improved hex editing.
+
+And rembember you can also use syntax highlighting for hex editing in vim with that command:
