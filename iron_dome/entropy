@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import math, sys
+
+def calc_entro(filename):
+    with open(filename, "rb") as file:
+        # start all counters with zeros
+        counters = {byte: 0 for byte in range(2 ** 8)}  
+
+        for byte in file.read():  # read in chunks for large files
+            counters[byte] += 1  # increase counter for specified byte
+
+        # we can get file size by reading current position
+        filesize = file.tell()  
+        # calculate probabilities for each byte
+        probabilities = [counter / filesize for counter in counters.values()]  
+        # final sum
+        entropy = -sum(probability * math.log2(probability) for probability in probabilities if probability > 0)  
+
+        print(entropy)
+
+def main():
+    arg = sys.argv
+    if len(arg) > 1: 
+        del arg[0]
+        for filename in arg:
+            print(" --- \n\033[1mFile:\033[0m \033[95m" + filename + "\033[0m \n --- ")
+            calc_entro(filename)
+    else:
+        print("We need at least 1 argument! Try again.")
+
+if __name__=="__main__":
+    main()

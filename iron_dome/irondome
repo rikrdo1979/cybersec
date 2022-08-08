@@ -1,44 +1,164 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os, sys, time, datetime, logging
+__author__ = "rikrdo"
+__copyright__ = "Copyright 2022, Bootcamp Cybersec "
+__credits__ = ["rikrdo"]
+__license__ = "GPL"
+__version__ = "1.0.1"
+__maintainer__ = "rikrdo"
+__email__ = "rikrdo@rikrdo.es"
+__status__ = "Production"
+
+# required libraries
+
+import time, datetime, os, sys, re, math
 from watchdog.observers import Observer
-from watchdog.events import LoggingEventHandler
+from watchdog.events import PatternMatchingEventHandler
 
-def writedown(src_path, event):
-	dt = datetime.datetime.now()
-	current_datetime = dt.strftime("%d-%m-%Y - %H:%M:%S")
-	with open("irondome.log","a") as file:
-		file.write(current_datetime+' - '+event+'\n')
-		file.close()
-	return(True)
+current_datetime = datetime.datetime.now().strftime("%d-%m-%Y | %H:%M:%S.%f")[:-3]
 
-class log_event(LoggingEventHandler):
-	def on_modified(self, event):
-		filename = event.src_path.split('/')[-1]
-		if event.is_directory:
-			print('Directory: ', filename, event.event_type)
-		else:
-			print('\tFile: ', filename, event.event_type)			
+def calc_entro(filename):
+    try:
+        with open(filename, "rb") as file:
+            # start all counters with zeros
+            counters = {byte: 0 for byte in range(2 ** 8)}  
 
-if __name__ == "__main__":
-	logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%d-%m-%Y %H:%M:%S')
-	#path = sys.argv[1] if len(sys.argv) > 1 else '.'
-	path="/home/rikrdo/github/cybersec/iron_dome/logs"
-	#event_handler = LoggingEventHandler()
-	event_handler = log_event()
-	observer = Observer()
-	observer.schedule(event_handler, path, recursive=True)  
-	#Scheduling monitoring of a path with the observer instance and event handler. There is 'recursive=True' because only with it enabled, watchdog.observers.Observer can monitor sub-directories
-	observer.start()  
-	#for starting the observer thread
+            for byte in file.read():  # read in chunks for large files
+                counters[byte] += 1  # increase counter for specified byte
 
-	try:
-		while True:
-			time.sleep(1)
-	except KeyboardInterrupt: 
-		observer.stop()
-		observer.join()
+            # we can get file size by reading current position
+            filesize = file.tell()  
+            # calculate probabilities for each byte
+            probabilities = [counter / filesize for counter in counters.values()]  
+            # final sum
+            entropy = -sum(probability * math.log2(probability) for probability in probabilities if probability > 0)  
 
+            print(f'{filename} - {entropy}')
+    except:
+        pass
 
-# DirModifiedEvent: event_type=modified, src_path='/home/rikrdo/cybersec/iron_dome/logs', is_directory=True
+def write_log(log_line):
+    # path where we have the log
+    log_path = "/var/log/irondome/"
+    # logfile name
+    log_file = "irondome.log"
+    # check if dir exists, if not we create
+    os.makedirs(log_path, exist_ok=True)
+    # open/create the file and write down the log
+    with open(log_path+log_file,'a+') as file:
+        file.write(f"{log_line}\n")
+        file.close()
+    return(True)
+
+def on_created(event):
+    log_line = (f"{current_datetime} | {event.src_path} [{event.src_path.split('/')[-1]}] - CREATED")
+    calc_entro(event.src_path)
+    write_log(log_line)
+    
+def on_deleted(event):
+    log_line = (f"{current_datetime} | {event.src_path} [{event.src_path.split('/')[-1]}] - DELETED")
+    print(log_line)
+    write_log(log_line)
+    calc_entro(event.src_path)
+
+def on_modified(event):
+    log_line = (f"{current_datetime} | {event.src_path} [{event.src_path.split('/')[-1]}] - MODIFIED")
+    print(log_line)
+    write_log(log_line)
+    calc_entro(event.src_path)
+
+def on_moved(event):
+    log_line = (f"{current_datetime} | {event.src_path} [{event.src_path.split('/')[-1]}] - MOVED TO - {event.dest_path}")
+    print(log_line)
+    write_log(log_line)
+    calc_entro(event.src_path)
+
+def monitor(path, patterns):
+    # monitor settings, we control every event
+    ignore_patterns = None
+    ignore_directories = False
+    case_sensitive = True
+    event_handler = PatternMatchingEventHandler(patterns, ignore_patterns, ignore_directories, case_sensitive)
+    # fire up in case of creation, deletetion, modification, moving
+    event_handler.on_created = on_created
+    event_handler.on_deleted = on_deleted
+    event_handler.on_modified = on_modified
+    event_handler.on_moved = on_moved
+    # recursively into directories
+    go_recursively = True
+    observer = Observer()
+    observer.schedule(event_handler, path, recursive=go_recursively)
+    observer.start()
+    # first line to log time date we start watching
+    log_line = (f"Start watching [ {path} ] ON {current_datetime}")
+    write_log(log_line)
+    print(f'\nStart watching [ {path} ]\n')
+    
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+        observer.join()
+
+def exit_gracefully():
+    print('\033[91m  ------------------------     @@@ Bye Bye!!! @@@  ------------------------\033[0m')
+
+def help():
+    # artisan help menu
+    print("\nHelp Menu:\n\n- You have to indicate as first argument the path [ ex. /var/log/irondome/ ]\n")
+    print("- Second and next arguments indicate the extensions you want to follow [ ex. .txt .pdf ... ]\n")
+    print("- Example:\n\n./irondome  /var/log/irondome/ .txt .pdf .key\n\n")
+    exit_gracefully()
+
+def main():
+    arg = sys.argv
+    to_set = set()
+    to_watch = []
+    # if we have arguments
+    if len(arg) > 1:
+        # control option errors
+        if (arg[1][0] == '-'):
+            # if option help
+            if (arg[1] == '--help') or (arg[1] == '-h'):
+                help()
+            else:
+                print("\nThis argument is not alowed\n")
+        else:
+            path = arg[1]
+            # check if given path exists
+            if os.path.exists(path) == False:
+                print(f"\nPath {path} not exist!Try again!\n")
+            else:
+                # check if given path has ending slash
+                if path[-1] != '/':
+                    path = arg[1]+'/'
+                # check if up to 2nd arguments has weird characters
+                for argument in range(2,len(arg)):
+                    ext = arg[argument]
+                    ext = re.sub(r'[^a-zA-Z0-9.]+','', ext)
+                    if ext != '':
+                        if ext[0] != '.':
+                            # transform to lowercase
+                            ext = '.'+ext.lower()
+                        to_set.add('*'+ext)
+                        to_watch = list(to_set)
+                if (len(to_watch) == 0):
+                    # if no extensions by arguments, we watch any typr of file
+                    to_watch = ['*']
+                print(" \n\033[1mPath to follow:\n\n*** \033[0m \033[95m" + path + "\033[0m ***")
+                print(" \n\033[1mExtension(s) to follow:\n\n*** \033[0m \033[95m" + str(to_watch) + "\033[0m ***")
+                monitor(path, to_watch)
+    else:
+        print("\nAdd at least 1 argument! Try again!.\n")
+
+if __name__=="__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        exit_gracefully()
+    finally:
+        pass
+
+# <FileCreatedEvent: event_type=created, src_path='/home/rikrdo/github/cybersec/iron_dome/logs/prueba.txt', is_directory=False>
