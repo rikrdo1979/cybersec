@@ -12,11 +12,26 @@ __status__ = "Production"
 
 # required libraries
 
-import time, datetime, os, sys, re, math
+import time, datetime, os, sys, re, math, hashlib
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
 current_datetime = datetime.datetime.now().strftime("%d-%m-%Y | %H:%M:%S.%f")[:-3]
+log_path = "/var/log/irondome/"
+log_file = "irondome.log"
+
+def read_hash(filename):
+    try:
+        # Open,close, read file and calculate MD5 on its contents 
+        with open(filename, 'rb') as file_to_check:
+            # read contents of the file
+            data = file_to_check.read()    
+            # pipe contents of the file through
+            md5_returned = hashlib.md5(data).hexdigest()
+            #print("\033[91mmd5: ", filename, " | " ,md5_returned, "\033[0m")
+        return(md5_returned)
+    except:
+        pass
 
 def calc_entro(filename):
     try:
@@ -33,47 +48,87 @@ def calc_entro(filename):
             probabilities = [counter / filesize for counter in counters.values()]  
             # final sum
             entropy = -sum(probability * math.log2(probability) for probability in probabilities if probability > 0)  
+            #print("\033[91mentropy: ", filename, " | " , entropy, "\033[0m")
+            return(entropy)
+    except:
+        pass
 
-            print(f'{filename} - {entropy}')
+def collect_data(*args):
+    try:
+        filelist = []
+        with open(log_path+log_file) as file:
+            data = file.read()
+            #print(data)
+            for lines in re.findall(r'(?<=\[)[^/]*?(?=\])', data):
+                filelist.append(lines)
+            #print("FILELIST: ", filelist)
+            if args:
+                arglist = list(args)
+                print("ARGS: ", arglist[0])
+                if arglist[0] in filelist:
+                    print("\033[91m WARNING! \033[0m")
+        return(filelist)
     except:
         pass
 
 def write_log(log_line):
-    # path where we have the log
-    log_path = "/var/log/irondome/"
-    # logfile name
-    log_file = "irondome.log"
-    # check if dir exists, if not we create
-    os.makedirs(log_path, exist_ok=True)
-    # open/create the file and write down the log
     with open(log_path+log_file,'a+') as file:
         file.write(f"{log_line}\n")
         file.close()
     return(True)
 
 def on_created(event):
-    log_line = (f"{current_datetime} | {event.src_path} [{event.src_path.split('/')[-1]}] - CREATED")
-    calc_entro(event.src_path)
+    #print("EVENTO: ", event)
+    file_md5 = read_hash(event.src_path)
+    entropy = calc_entro(event.src_path)
+    filename = event.src_path.split('/')[-1]
+    collect_data(filename)
+    if event.is_directory:
+        log_line = (f"{current_datetime} | {event.src_path} - CREATED")
+    else:
+        log_line = (f"{current_datetime} | {event.src_path} [{filename}] ({entropy}) *{file_md5}* - CREATED")
+    print(log_line)
     write_log(log_line)
     
 def on_deleted(event):
-    log_line = (f"{current_datetime} | {event.src_path} [{event.src_path.split('/')[-1]}] - DELETED")
+    #print("EVENTO: ", event)
+    file_md5 = read_hash(event.src_path)
+    entropy = calc_entro(event.src_path)
+    filename = event.src_path.split('/')[-1]
+    collect_data(filename)
+    if event.is_directory:
+        log_line = (f"{current_datetime} | {event.src_path} - DELETED")
+    else:
+        log_line = (f"{current_datetime} | {event.src_path} [{filename}] ({entropy}) *{file_md5}* - DELETED")
     print(log_line)
     write_log(log_line)
-    calc_entro(event.src_path)
 
 def on_modified(event):
-    log_line = (f"{current_datetime} | {event.src_path} [{event.src_path.split('/')[-1]}] - MODIFIED")
+    #print("EVENTO: ", event)
+    file_md5 = read_hash(event.src_path)
+    entropy = calc_entro(event.src_path)
+    filename = event.src_path.split('/')[-1]
+    collect_data(filename)
+    if event.is_directory:
+        log_line = (f"{current_datetime} | {event.src_path} - MODIFIED")
+    else:
+        log_line = (f"{current_datetime} | {event.src_path} [{filename}] ({entropy}) *{file_md5}* - MODIFIED")
     print(log_line)
     write_log(log_line)
-    calc_entro(event.src_path)
 
 def on_moved(event):
-    log_line = (f"{current_datetime} | {event.src_path} [{event.src_path.split('/')[-1]}] - MOVED TO - {event.dest_path}")
+    #print("\033[91mEVENTO: ", event, "\033[0m")
+    file_md5 = read_hash(event.src_path)
+    entropy = calc_entro(event.src_path)
+    filename = event.src_path.split('/')[-1]
+    collect_data(filename)
+    if event.is_directory:
+        log_line = (f"{current_datetime} | {event.src_path} - MOVED")
+    else:
+        log_line = (f"{current_datetime} | {event.src_path} [{filename}] ({entropy}) *{file_md5}* - MOVED TO - {event.dest_path}")
     print(log_line)
     write_log(log_line)
-    calc_entro(event.src_path)
-
+ 
 def monitor(path, patterns):
     # monitor settings, we control every event
     ignore_patterns = None
@@ -145,10 +200,11 @@ def main():
                         to_set.add('*'+ext)
                         to_watch = list(to_set)
                 if (len(to_watch) == 0):
-                    # if no extensions by arguments, we watch any typr of file
+                    # if no extensions by arguments, we watch any type of file
                     to_watch = ['*']
                 print(" \n\033[1mPath to follow:\n\n*** \033[0m \033[95m" + path + "\033[0m ***")
                 print(" \n\033[1mExtension(s) to follow:\n\n*** \033[0m \033[95m" + str(to_watch) + "\033[0m ***")
+                collect_data()
                 monitor(path, to_watch)
     else:
         print("\nAdd at least 1 argument! Try again!.\n")

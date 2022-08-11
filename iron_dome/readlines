@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+__author__ = "rikrdo"
+__copyright__ = "Copyright 2022, Bootcamp Cybersec "
+__credits__ = ["rikrdo"]
+__license__ = "GPL"
+__version__ = "1.0.1"
+__maintainer__ = "rikrdo"
+__email__ = "rikrdo@rikrdo.es"
+__status__ = "Production"
+
+# required libraries
+
+import time, datetime, os, sys, re, math, hashlib
+log_path = "/var/log/irondome/"
+log_file = "irondome.log"
+
+def collect_data(*args):
+    try:
+        filelist = []
+        with open(log_path+log_file) as file:
+            data = file.read()
+            print(data)
+            for lines in re.findall(r'(?<=\[)[^/]*?(?=\])', data):
+                print("RES: ", lines)
+    except:
+        pass
+
+collect_data()
