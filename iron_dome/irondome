@@ -12,20 +12,31 @@ __status__ = "Production"
 
 # required libraries
 
-import time, datetime, os, sys, re, math, hashlib
+import time, datetime, os, sys, re, math, hashlib, threading, subprocess, psutil
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
-current_datetime = datetime.datetime.now().strftime("%d-%m-%Y | %H:%M:%S.%f")[:-3]
+print(
+"\n\n\n\033[91m "+                            
+"\t      ...           ...          \n"+     
+"\t     (- -)         (- o)         \n"+
+"\t ooO--(_)--Ooo-ooO--(_)--Ooo-    \n"+
+"\n\n\033[0m "
+)
+
+# global variables
+current_datetime = datetime.datetime.now().strftime("%d-%m-%Y • %H:%M:%S.%f")[:-3]
 log_path = "/var/log/irondome/"
 log_file = "irondome.log"
+bkp_path = "./backup/"
+pid = os.getpid()
 
 def read_hash(filename):
     try:
-        # Open,close, read file and calculate MD5 on its contents 
-        with open(filename, 'rb') as file_to_check:
+        # open,close, read file and calculate MD5 on its contents 
+        with open(filename, 'rb') as file2check:
             # read contents of the file
-            data = file_to_check.read()    
+            data = file2check.read()    
             # pipe contents of the file through
             md5_returned = hashlib.md5(data).hexdigest()
             #print("\033[91mmd5: ", filename, " | " ,md5_returned, "\033[0m")
@@ -35,15 +46,15 @@ def read_hash(filename):
 
 def calc_entro(filename):
     try:
-        with open(filename, "rb") as file:
+        with open(filename, "rb") as file2check:
             # start all counters with zeros
             counters = {byte: 0 for byte in range(2 ** 8)}  
 
-            for byte in file.read():  # read in chunks for large files
+            for byte in file2check.read():  # read in chunks for large files
                 counters[byte] += 1  # increase counter for specified byte
 
             # we can get file size by reading current position
-            filesize = file.tell()  
+            filesize = file2check.tell()  
             # calculate probabilities for each byte
             probabilities = [counter / filesize for counter in counters.values()]  
             # final sum
@@ -55,79 +66,170 @@ def calc_entro(filename):
 
 def collect_data(*args):
     try:
+        # initialize empty variables
         filelist = []
+        i = 0
+        d = {}
+        # create a list to then make a dict 
+        key_list = ['fname' , 'entropy' , 'md5sum']
+        # open the log and read line by line
         with open(log_path+log_file) as file:
             data = file.read()
-            #print(data)
+            # for each line, we match only with the patern, something between []
             for lines in re.findall(r'(?<=\[)[^/]*?(?=\])', data):
-                filelist.append(lines)
-            #print("FILELIST: ", filelist)
-            if args:
-                arglist = list(args)
-                print("ARGS: ", arglist[0])
-                if arglist[0] in filelist:
-                    print("\033[91m WARNING! \033[0m")
-        return(filelist)
+                # split matched content
+                val = lines.split('|')
+                for value in val:
+                    d[key_list[i]] = value
+                    i = i + 1
+                    if i%3 == 0:
+                        i = 0
+                filelist.append(d)
+                # flush the dict to fill a new one in the next round
+                d = {}
+        if args:
+            flag = False
+            for p in filelist:
+                # check if fname is equal but md5 not equal... suspicios
+                if (p['fname'] == args[0]) and (p['md5sum'] != args[2]):
+                    # if entropy is not equal ... mmm ... confirm something wrong
+                    if (p['entropy'] != args[1]):
+                        flag = True
+                        break
+            if flag:
+                log_line = (f"{current_datetime} • {args[0]} {args[3]} - WARNING")
+                write_log(log_line)
+
+                # print warnings and stuff
+                print("\033[91m WARNING!\033[0m\n") 
+                print(" \033[1mSRC NAME:\033[0m \t\033[91m", args[0], "\033[0m") 
+                print(" \033[96mDST NAME:\033[0m \t\033[91m", args[3], "\033[0m") 
+                print(" \033[1mSRC ENTROPY:\033[0m \t\033[91m", p['entropy'], "\033[0m") 
+                print(" \033[96mDST ENTROPY:\033[0m \t\033[91m", args[1], "\033[0m")       
+                print(" \033[1mSRC MD5:\033[0m \t\033[91m", p['md5sum'], "\033[0m") 
+                print(" \033[96mDST MD5:\033[0m \t\033[91m", args[2], "\033[0m\n")
     except:
         pass
 
 def write_log(log_line):
-    with open(log_path+log_file,'a+') as file:
-        file.write(f"{log_line}\n")
-        file.close()
-    return(True)
+    try:
+        # if directory not exist create it
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
+        # open the log file
+        with open(log_path+log_file,'a+') as file:
+            file.write(f"{log_line}\n")
+            file.close()
+        return(True)
+    except:
+        pass
 
 def on_created(event):
-    #print("EVENTO: ", event)
     file_md5 = read_hash(event.src_path)
     entropy = calc_entro(event.src_path)
     filename = event.src_path.split('/')[-1]
-    collect_data(filename)
     if event.is_directory:
-        log_line = (f"{current_datetime} | {event.src_path} - CREATED")
+        log_line = (f"{current_datetime} • {event.src_path} - CREATED")
     else:
-        log_line = (f"{current_datetime} | {event.src_path} [{filename}] ({entropy}) *{file_md5}* - CREATED")
+        log_line = (f"{current_datetime} • {event.src_path} [{filename}|{entropy}|{file_md5}] - CREATED")
     print(log_line)
     write_log(log_line)
     
 def on_deleted(event):
-    #print("EVENTO: ", event)
     file_md5 = read_hash(event.src_path)
     entropy = calc_entro(event.src_path)
     filename = event.src_path.split('/')[-1]
-    collect_data(filename)
     if event.is_directory:
-        log_line = (f"{current_datetime} | {event.src_path} - DELETED")
+        log_line = (f"{current_datetime} • {event.src_path} - DELETED")
     else:
-        log_line = (f"{current_datetime} | {event.src_path} [{filename}] ({entropy}) *{file_md5}* - DELETED")
+        log_line = (f"{current_datetime} • {event.src_path} [{filename}|{entropy}|{file_md5}] - DELETED")
     print(log_line)
     write_log(log_line)
 
 def on_modified(event):
-    #print("EVENTO: ", event)
     file_md5 = read_hash(event.src_path)
     entropy = calc_entro(event.src_path)
     filename = event.src_path.split('/')[-1]
-    collect_data(filename)
     if event.is_directory:
-        log_line = (f"{current_datetime} | {event.src_path} - MODIFIED")
+        log_line = (f"{current_datetime} • {event.src_path} - MODIFIED")
     else:
-        log_line = (f"{current_datetime} | {event.src_path} [{filename}] ({entropy}) *{file_md5}* - MODIFIED")
+        log_line = (f"{current_datetime} • {event.src_path} [{filename}|{entropy}|{file_md5}] - MODIFIED")
     print(log_line)
     write_log(log_line)
 
 def on_moved(event):
-    #print("\033[91mEVENTO: ", event, "\033[0m")
+    # source
     file_md5 = read_hash(event.src_path)
     entropy = calc_entro(event.src_path)
     filename = event.src_path.split('/')[-1]
-    collect_data(filename)
+    # destination
+    file_dest_md5 = read_hash(event.dest_path)
+    entropy_dest = calc_entro(event.dest_path)
+    filename_dest = event.dest_path.split('/')[-1]
+
     if event.is_directory:
-        log_line = (f"{current_datetime} | {event.src_path} - MOVED")
+        log_line = (f"{current_datetime} • {event.src_path} - MOVED")
     else:
-        log_line = (f"{current_datetime} | {event.src_path} [{filename}] ({entropy}) *{file_md5}* - MOVED TO - {event.dest_path}")
+        log_line = (f"{current_datetime} • {event.src_path} ({filename}|{entropy}|{file_md5}) - MOVED TO - {event.dest_path} [{filename_dest}|{entropy_dest}|{file_dest_md5}]")
     print(log_line)
     write_log(log_line)
+    collect_data(filename, entropy_dest, file_dest_md5, filename_dest, file_md5)
+
+def read_disk_io():
+    # check the stats in two different moments and calc delta
+    while True:
+        timer = 2
+        iototal = []
+        i = 0
+        
+        # read system stats => /sys/block/sda/stat
+        stats = os.popen("cat /sys/block/sda/stat").read()
+        stats_split = stats.replace('\n','')
+        stats_split = stats_split.split(' ')
+        while '' in stats_split :
+            stats_split.remove('')
+        
+        # read system stats 2 => /sys/block/sda/stat
+        time.sleep(timer)
+        stats_2 = os.popen("cat /sys/block/sda/stat").read()
+        stats_split_2 = stats_2.replace('\n','')
+        stats_split_2 = stats_split_2.split(' ')
+        # remove garbage
+        while '' in stats_split_2 :
+            stats_split_2.remove('')
+        # loop the list to get all the values and append to a new list with the obtained values
+        for io in range(11):
+            iototal.append(int(stats_split_2[i]) - int(stats_split[i]))
+            i = 1 + i
+
+        #### command to check disk read => time dd if=/path/to/big/file of=/dev/null bs=8k
+        #### quick read test => dd < /dev/random
+
+        # print delta
+        print("\033[93m READ I/Os: ", iototal[0], "\033[0m")
+
+        #### command to check memory use => while true ;  do ps u -p 188152 | awk '{sum=sum+$6}; END {print sum/1024}' ; sleep 1 ; done
+        
+        print("\033[93m MEMORY: ", psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2 , "\033[0m\n")
+        if iototal[0] > 20:
+            log_line = (f"\033[91m {current_datetime} • READ I/Os: {iototal[0]} - READ ABUSE\033[0m")
+            print(log_line)
+            write_log(log_line)
+
+def backup(src_path):
+    try:
+        # if dir not exists create it
+        if not os.path.exists(bkp_path):
+            os.makedirs(bkp_path)
+        while True:
+            timer = 5
+            os.system("rsync -azP " + src_path + " " + bkp_path)
+            log_line = (f"{current_datetime} • SRC = {src_path} | DST: {bkp_path}  - INCREMENTAL BACKUP")
+            write_log(log_line)
+            print("\033[93m BACKUP START! FROM: ", src_path, " TO ", bkp_path, "\033[0m")
+            time.sleep(timer)
+    except:
+        pass
  
 def monitor(path, patterns):
     # monitor settings, we control every event
@@ -145,20 +247,35 @@ def monitor(path, patterns):
     observer = Observer()
     observer.schedule(event_handler, path, recursive=go_recursively)
     observer.start()
+
     # first line to log time date we start watching
-    log_line = (f"Start watching [ {path} ] ON {current_datetime}")
+    log_line = (f"\nStart watching [ {path} ] ON {current_datetime}\n")
     write_log(log_line)
     print(f'\nStart watching [ {path} ]\n')
+
+    # thread for disk stats
+    diskread = threading.Thread(target=read_disk_io)
+    diskread.daemon = True
+    diskread.start()
+
+    # thread for incremental backup
+    inc_backup = threading.Thread(target=backup, args = {path})
+    inc_backup.daemon = True
+    inc_backup.start()
     
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
+        # if ctrl + c kill all threads, very important timeout for dependants threads
         observer.stop()
         observer.join()
+        diskread.join(0.1)
+        inc_backup.join(0.1)
+        exit_gracefully()
 
 def exit_gracefully():
-    print('\033[91m  ------------------------     @@@ Bye Bye!!! @@@  ------------------------\033[0m')
+    print('\n\033[91m  ------------------------     @@@ Bye Bye!!! @@@  ------------------------\033[0m')
 
 def help():
     # artisan help menu
@@ -204,7 +321,7 @@ def main():
                     to_watch = ['*']
                 print(" \n\033[1mPath to follow:\n\n*** \033[0m \033[95m" + path + "\033[0m ***")
                 print(" \n\033[1mExtension(s) to follow:\n\n*** \033[0m \033[95m" + str(to_watch) + "\033[0m ***")
-                collect_data()
+                print("\nPID: \033[91m",pid , "\033[0m") 
                 monitor(path, to_watch)
     else:
         print("\nAdd at least 1 argument! Try again!.\n")
@@ -216,5 +333,3 @@ if __name__=="__main__":
         exit_gracefully()
     finally:
         pass
-
-# <FileCreatedEvent: event_type=created, src_path='/home/rikrdo/github/cybersec/iron_dome/logs/prueba.txt', is_directory=False>
