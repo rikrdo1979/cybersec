@@ -1,0 +1,32 @@
+mysql -u qdm694721649 -p -h 121.42.109.169
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=qdm694721649_db
+DB_USERNAME=qdm694721649
+DB_PASSWORD=Mpts1788
+
+
+*********
+
+mysql -u poplr -p'QFCFRChPrc5QV9Dz' -h 107.155.87.13 -P 3306 -D poplr
+mysql -u poplr -p -h 107.155.87.13
+ 
+DB_HOST=localhost
+DB_DATABASE=poplr
+DB_USERNAME=poplr
+DB_PASSWORD=QFCFRChPrc5QV9Dz
+
+***
+
+mysql -u teladmin -p'miwa331377' -h 35.221.97.93 -P 3306 -D telforce_widsley
+
+35.221.97.93
+
+DB_CONNECTION=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=telforce_widsley
+DB_USERNAME=teladmin
+DB_PASSWORD=miwa331377

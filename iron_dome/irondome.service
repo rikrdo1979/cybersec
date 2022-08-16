@@ -1,0 +1,20 @@
+# /lib/systemd/system/irondome.service
+# systemctl start irondome
+[Unit]
+Description=script to log changes in a given directory
+# start after another service
+After=network.target
+# restart interval
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+# only started by root
+User=root
+# script to execute in an absolute path 
+ExecStart=python3 /absolute/path/to/irondome
+
+[Install]
+WantedBy=multi-user.target
