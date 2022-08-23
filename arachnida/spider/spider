@@ -39,6 +39,15 @@ session = HTMLSession()
 
 headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:82.0) Gecko/20100101 Firefox/82.0' }
 
+def error_log(e):
+    try:
+        f = open('log.txt', 'w')
+        f.write('An exceptional thing happed - %s' % e)
+        f.close()
+    except:
+        print("Fuck!!!!")
+        pass
+
 # check if the URL is reacheable and valid
 def uri_validator(domain):
     try:
@@ -47,137 +56,126 @@ def uri_validator(domain):
     except:
         return False
 
-def save_img(src, dirpath):
-    print("\n --- Files --- \n")
+def save_img(img, dirpath):
     if not os.path.isdir(dirpath):
-        print(' \033[93mDirectory is not present. Creating a new one.\033[0m')
+        print('    \033[93mDirectory is not present. Creating a new one.\033[0m\n')
         os.mkdir(dirpath)
-    for img in src:
-        try:
-            filename = img.split("/")[-1]
-            ext = img.split(".")[-1]
-            response = requests.get(img)
-            # check if file exists
-            if not exists(dirpath+filename):
-                # check if name is to long and replace for a shorter random number
-                if len(filename) > 128:
-                   filename = str((random.randrange(100000, 9999999, 1)))+'.'+ext
-                if ext == "pdf" or ext == "docx":
-                    media = " \033[91m["+ ext +"] \033[0m " + filename + " "
-                else:
-                   media = " \033[96m["+ ext +"] \033[0m " + filename + " "
-                print(media)
-                file = open((dirpath+filename), 'wb')
-                file.write(response.content)
-                file.close()
+    try:
+        filename = img.split("/")[-1]
+        ext = img.split(".")[-1]
+        response = requests.get(img, allow_redirects=True)
+        # check if file exists
+        if not exists(dirpath+filename):
+            # check if name is to long and replace for a shorter random number
+            if len(filename) > 128:
+               filename = str((random.randrange(100000, 9999999, 1)))+'.'+ext
+            if ext == "pdf" or ext == "docx":
+                media = "    \033[91m["+ ext +"] \033[0m " + filename + " "
             else:
-                pass
-                print(" \033[91m\u2716\033[0m " + filename + " \033[91mFile Exists!\033[0m")
-        except requests.exceptions.RequestException as e:
+               media = "    \033[96m["+ ext +"] \033[0m " + filename + " "
+            print(media)
+            file = open((dirpath+filename), 'wb')
+            file.write(response.content)
+            file.close()
+        else:
             pass
-            #print("\033[91m[error] \033[0m ", e.__dict__)
-
+            #print("    \033[91m\u2716\033[0m " + filename + " \033[91mFile Exists!\033[0m")
+    except requests.exceptions.RequestException as e:
+        error_log(e)
+        pass
 
 def find_links(crawl, i, dirpath, download):
     i = int(i)
     to_set = set()
     clean_set = set()
+    history = set()
     l = 1
     h = 0
-    level_list = []
-    whole_list = set()
 
     while i > 0:
         print("\n\033[93mLEVEL: ", l , "\033[0m")
         # get all the working links
         for lines in crawl:
-            h += 1 
-            print('\n[ ',str(h),' ] - ',lines , ' \n ') 
-            try:
-                # save lines in the respond
-                r = session.get(lines)
-                # loop over the found links
-                for urls in r.html.links:
-                    clean_set.add(urls)
-                for url in clean_set:
-                    for j in range(1,8):
-                        print('Scraping... \033[1m\033[1;32m'+animation[j]+'\033[0m\033[0m', end='\r')
-                        sleep(0.01)
-                    # replace spaces
-                    url = url.replace(" ", "%20")
-                    url_raw = urlparse(url)
-                    # get relative path URL's
-                    uri = lines.split('/')[:3]
-                    if not url_raw.scheme:
-                        if url_raw.path.startswith('/'):
-                            url = ("/".join(uri))+url_raw.path
-                        else:
-                            url = ("/".join(uri))+"/"+url_raw.path
-                    else:
-                        url = url
-                        if not url in to_set:
-                            print("    \033[1;32m[url] \033[0m " + url)
-                        else:
-                            print("    \033[91m[ Duplicated ] \033[0m " + url)
-                        # save in a set to remove duplicates
-                        to_set.add(url)
-                            # convert set to a list to work with it
-                        level_list = list(to_set)
-                print("                                            ", end="\r")
-            except requests.exceptions.RequestException as e:
+            if lines in history:
                 continue
+            else:
+                h += 1 
+                print('\n  \033[1;32m[' , str(h) , '] \033[0m - ',lines , ' \n ')
+                if download:
+                    crawl_files(lines, dirpath)
+            if i > 1:
+                try:
+                    # save lines in the respond
+                    r = session.get(lines)
+                    # loop over the found links
+                    for urls in r.html.links:
+                        # reduce redundancy
+                        clean_set.add(urls)
+                    for url in clean_set:
+                        # animation
+                        for j in range(1,8):
+                            print('Scraping... \033[1m\033[1;32m'+animation[j]+'\033[0m\033[0m', end='\r')
+                            sleep(0.01)
+                        # replace spaces
+                        url = url.replace(" ", "%20")
+                        url_raw = urlparse(url)
+                        # get relative path URL's
+                        uri = lines.split('/')[:3]
+                        if not url_raw.scheme:
+                            if url_raw.path.startswith('/'):
+                                url = ("/".join(uri))+url_raw.path
+                            else:
+                                url = ("/".join(uri))+"/"+url_raw.path
+                        else:
+                            url = url
+                        if url.startswith('http'):
+                            if not url in to_set:
+                                # save in a set to remove duplicates...if any
+                                to_set.add(url)
+                                crawl = list(to_set)
+                    print("                                            ", end="\r")
+                except requests.exceptions.RequestException as e:
+                    error_log(e)
+                    continue
+        history.add(lines)
         i = i -1
-        l = l + 1
+        l += 1
         h = 0
 
-        for links in crawl:
-            whole_list.add(links)
-            if links in level_list:
-                level_list.remove(links)
-        
-        crawl = level_list
-        #print("\n\nWHOLE LIST ",whole_list," @@@@@@@@@@@@@@@@@\n\n")
-        #print("\n\nCRAWL ",crawl," @@@@@@@@@@@@@@@@@\n\n")
-        
-        
-    if download:
-        for links in crawl:
-            whole_list.add(links)
-        crawl_files(whole_list, dirpath)  
-
-def crawl_files(crawl, dirpath):
+def crawl_files(urls, dirpath):
     im_set = set()
-    im_list = []
     # get all the working links for the images 
-    for urls in crawl:
-        #print("\033[1;32m[url] \033[0m " + urls)
-        try:
-            response = urllib.request.urlopen(urls)
-            # get the ltd to join with relative path images
-            proto = urls.split('/')[:1]
-            uri_img = urls.split('/')[:3]
-            # filter the files with extensions in the list
-            for images in re.findall(':?([^"]*\.(?:png|jpeg|jpg|gif|bmp|pdf|docx))', str(response.read())):
-                for j in range(1,8):
-                    print('Making a list... \033[1m\033[91m'+animation[j]+'\033[0m\033[0m', end='\r')
-                    sleep(0.01)
-                if images[0] == ('/'):
-                    if images.startswith('//'):
-                        im_set.add(str(proto[0])+images)
-                    else:
-                        im_set.add("/".join(uri_img)+images)
-                elif images.startswith('http'):
-                    im_set.add(images)
+    try:
+        response = urllib.request.urlopen(urls)
+        # get the ltd to join with relative path images
+        proto = urls.split('/')[:1]
+        uri_img = urls.split('/')[:3]
+        # filter the files with extensions in the list
+        for images in re.findall(':?([^"]*\.(?:png|jpeg|jpg|gif|bmp|pdf|docx))', str(response.read())):
+            # animation
+            for j in range(1,8):
+                print('Looking for files... \033[1m\033[91m'+animation[j]+'\033[0m\033[0m', end='\r')
+                sleep(0.01)
+            if images[0] == ('/'):
+                if images.startswith('//'):
+                    images = str(proto[0])+images
                 else:
-                    pass
-            im_list = list(im_set)
-        except urllib.error.HTTPError as e:
-            continue
-        except urllib.error.URLError as e:
-            continue
+                   images = "/".join(uri_img)+images
+            elif images.startswith('http'):
+                images = images
+            else:
+                pass
+            if not images in im_set:
+                im_set.add(images)
+                save_img(images, dirpath)
+
+    except urllib.error.HTTPError as e:
+        error_log(e)
+        pass
+    except urllib.error.URLError as e:
+        error_log(e)
+        pass
     print("                      ", end="\r")
-    # check if we have to download images
-    save_img(im_list, dirpath)
         
 # pretty script end after ctrl + c
 
@@ -186,7 +184,7 @@ def exit_gracefully():
 
 def kill_key():
     print('\n\033[91m  -------------------------- *** Keyboard Interrupted!!! *** -------------------------\033[0m', end="\r")
-    sleep(1.5)
+    sleep(0.5)
     print("                                                                                                          ", end="\r")
 
 # collect arguments:
