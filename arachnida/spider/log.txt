@@ -1,0 +1,1 @@
+An exceptional thing happed - Invalid URL 'image/data/payment.jpg': No scheme supplied. Perhaps you meant http://image/data/payment.jpg?
