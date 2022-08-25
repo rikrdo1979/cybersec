@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 __author__ = "rikrdo"
@@ -21,7 +21,7 @@ print('''
 
 # required libraries
 
-import argparse, requests, re, os, urllib, random, sys
+import argparse, requests, re, os, urllib, random, sys, ssl
 from copy import deepcopy
 from itertools import cycle
 from genericpath import exists
@@ -34,6 +34,8 @@ from time import sleep
 #animation = ['|', '/', '-', '\\'] # range 1,4
 animation = ["⢿", "⣻", "⣽", "⣾", "⣷", "⣯", "⣟", "⡿"] # range 1,8
 #animation = ["■         ","■■        ", "■■■       ", "■■■■      ", "■■■■■     ", "■■■■■■    ", "■■■■■■■   ", "■■■■■■■■  ", "■■■■■■■■■ ", "■■■■■■■■■■"] # range 1,10
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 session = HTMLSession()
 
@@ -114,7 +116,7 @@ def find_links(crawl, i, dirpath, download):
                     for url in clean_set:
                         # animation
                         for j in range(1,8):
-                            print('Scraping... \033[1m\033[1;32m'+animation[j]+'\033[0m\033[0m', end='\r')
+                            print('Scraping... \033[1m\033[1;32m'+animation[j]+'\033[0m\033[0m', end = "\r")
                             sleep(0.01)
                         # replace spaces
                         url = url.replace(" ", "%20")
