@@ -45,7 +45,7 @@ def error_log(e):
         f.write('An exceptional thing happed - %s' % e)
         f.close()
     except:
-        print("Fuck!!!!")
+        print("What the heck!!!!")
         pass
 
 # check if the URL is reacheable and valid

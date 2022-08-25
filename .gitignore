@@ -1,4 +1,49 @@
-.DS_Store
+# Documentation:
+# https://git-scm.com/docs/gitignore
+
+# Common patterns:
+# Hash              = everything that follows is a comment.
+# Leading slash     = matches the directory containing the .gitignore file.
+# No leading slash  = matches anywhere in the repository, from the directory containing the .gitignore file and deeper.
+# Trailing slash    = matches a directory itself, but not a file.
+# No trailing slash = matches a directory or a file.
+# *                 = matches 0 or more characters (except /).
+# ?                 = matches 1 character (except /).
+#  **               = matches everything.
+# /**               = matches all files and directories within.
+#  **/              = matches all directories.
+# /**/              = matches 0 or more directories.
+# []                = defines a class of characters, of which any single one will match.
+# !                 = negates a PREVIOUS match only (i.e. subsequent matches negate the negation).
+# \                 = escapes a pattern character.
+
+# Subversion files.
+**/.svn/
+
+# Windows thumbnail cache files.
+**/Thumbs.db
+
+# Windows folder config files.
+**/[Dd]esktop.ini
+
+# Windows volume root files.
+/$RECYCLE.BIN/
+/System Volume Information/
+
+# macOS resource forks from compressed files.
+**/__MACOSX/
+
+# macOS folder config files.
+**/.DS_Store
+
+# macOS volume root files.
+/.fseventsd
+/.Spotlight-V100
+/.Trashes
+/.VolumeIcon.icns
+
+# Specific Files/Folders
 *pruebas*
 students-cybersec-malaga.txt
 vaccine/docker/*
+System Volume Information
