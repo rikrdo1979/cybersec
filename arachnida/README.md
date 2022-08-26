@@ -1,6 +1,6 @@
-![image text](https://github.com/rikrdo1979/cybersec/blob/main/images/spider.jpg)
-
 ## Proyecto Arachnida
+
+![image text](https://github.com/rikrdo1979/cybersec/blob/main/images/spider.jpg)
 
 Los metadatos son información que se utiliza para describir otros datos. Son esencialmente datos sobre datos.
 Frecuentemente se utililizan en imágenes y documentos, pudiendo llegar a revelar información sensible de quienes lo han creado o manipulado.
