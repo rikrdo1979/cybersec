@@ -1,4 +1,4 @@
-![image text](https://github.com/rikrdo1979/cybersec/blob/main/arachnida/spider.jpg)
+![image text](https://github.com/rikrdo1979/cybersec/blob/main/images/spider.jpg)
 
 ## Proyecto Arachnida
 
