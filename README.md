@@ -8,6 +8,6 @@ Bootcamp de 8 semanas organizado por 42 y Telefonica Tech.
 
 - 12 proyectos
 - 53 días
-- 4 Campus (Madrid, Barcelona, Urduliz y Málaga 
+- 4 Campus (Madrid, Barcelona, Urduliz y Málaga) 
 
 ![image text](https://github.com/rikrdo1979/cybersec/blob/main/images/telefonica-tech.jpg)
