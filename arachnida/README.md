@@ -1,3 +1,5 @@
+![image text](https://github.com/rikrdo1979/cybersec/blob/main/arachnida/spider.jpg)
+
 ## Proyecto Arachnida
 
 Los metadatos son información que se utiliza para describir otros datos. Son esencialmente datos sobre datos.
