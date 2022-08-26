@@ -36,6 +36,9 @@
 # macOS folder config files.
 **/.DS_Store
 
+# macOS config files
+._.DS_Store
+
 # macOS volume root files.
 /.fseventsd
 /.Spotlight-V100
