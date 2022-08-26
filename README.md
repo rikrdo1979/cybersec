@@ -13,6 +13,6 @@ Bootcamp de 8 semanas organizado por 42 y Telefonica Tech.
 
 <p align="center">
   <img src="https://github.com/rikrdo1979/cybersec/blob/main/images/42.png" alt="42 Network"/>
+</br></br>
+ <a href="https://www.42malaga.com/">42 Málaga</a> |  <a href="https://www.fundaciontelefonica.com/noticias/cien-personas-aprenden-gratis-ciberseguridad-campus-42/">Bootcamp Ciberseguridad</a> | <a href="https://telefonicatech.com/es" >Telefónica Tech</a>
 </p>
-
-[1er Bootcamp de Ciberseguridad - 42](https://www.fundaciontelefonica.com/noticias/cien-personas-aprenden-gratis-ciberseguridad-campus-42/ "1er Bootcamp Ciberseguridad 42 School")  |  [42 Málaga](https://www.42malaga.com/ "42 Málaga")  |  [Telefónica Tech](https://telefonicatech.com/es "Telefónica Tech")
