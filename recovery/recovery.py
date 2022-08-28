@@ -10,13 +10,19 @@ __maintainer__ = "rikrdo"
 __email__ = "rikrdo@rikrdo.es"
 __status__ = "Production"
 
-print('''                         
-          ...           ...      
-         (- -)         (- o)
-    -ooO--(_)--Ooo-ooO--(_)--Ooo-
-    ''')
+print('''
+                       ...           ...      
+                      (- -)         (- o)
+                 -ooO--(_)--Ooo-ooO--(_)--Ooo-
+    _______   ____   ____  _______  __ ___________ ___.__.
+    \_  __ \_/ __ \_/ ___\/  _ \  \/ // __ \_  __ <   |  |
+     |  | \/\  ___/\  \__(  <_> )   /\  ___/|  | \/\___  |
+     |__|    \___  >\___  >____/ \_/  \___  >__|   / ____|
+                 \/     \/                \/       \/     
+''')
 
 import os, datetime, subprocess, wmi, sys, winreg, sqlite3
+from datetime import datetime
 from Registry import Registry
 from time import sleep
 from printy import printy
@@ -55,7 +61,7 @@ def branch():
             for i in range(num_of_values):
                 values = EnumValue(hosts_key, i)
                 if (values[0] == "InstallDate"):
-                    dt_install = format(datetime.datetime.fromtimestamp(values[1]).strftime("%d-%m-%Y - %H:%M:%S"))
+                    dt_install = format(datetime.fromtimestamp(values[1]).strftime("%d-%m-%Y - %H:%M:%S"))
                     print('  Installed date: ', dt_install)                
                     #print("\n\n ", values)
     inputy("\n  [gI]Press Enter to continue...@")
@@ -74,7 +80,7 @@ def recent_files():
     for files in dir_list:
         progress()
         access_time = os.path.getatime(path+'//'+files)
-        last_access = format(datetime.datetime.fromtimestamp(access_time).strftime("%d-%m-%Y - %H:%M:%S"))
+        last_access = format(datetime.fromtimestamp(access_time).strftime("%d-%m-%Y - %H:%M:%S"))
         print (" ",last_access," >>> ", files)
 
     inputy("\n  [gI]Press Enter to continue...@")
@@ -83,6 +89,9 @@ def recent_files():
 # Programas instalados
 def installed_software():
     printy("\n  | [rB]INSTALLED SOFTWARE@ | \n")
+    
+    #$Apps += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # 32 Bit
+    #$Apps += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*"             # 64 Bit
 
     for p in w.Win32_Product():
         progress()
@@ -103,32 +112,37 @@ def open_apps():
         app_set.add(process.Name)
     
     inputy("\n  [gI]Press Enter to continue...@")
-    reg_access()
+    browser_history()
 
 # Historial de navegación
+# Historial de navegación
 def browser_history():
-    database_file = r'C:\Users\Vagrant\AppData\Local\Microsoft\Edge\User Data\Default\History'
-    print(database_file)
-    print ("Accessing Google Chrome browsing history.")
-    db = sqlite3.connect(database_file)
-    print(db)
-    cursor = db.cursor()
-    cursor.execute("SELECT * from urls")
-    browsing_data = (cursor.fetchall())
-    for record in browsing_data:
-        visit_time = str(datetime.datetime(1601,1,1) + datetime.timedelta(microseconds=record[5]))
-        if visit_time[:4] == "1601":
-            pass
-        else:
-            visit_time = str(datetime.datetime.strptime(visit_time, "%d-%m-%Y %H:%M:%S"))
-            visit_time = visit_time[:-7]
-    printable = set(string.printable)
-    visit_title = filter (lambda x: x in printable, record[2])
-    visit_title = visit_title.replace(",","")
-    visit_url = record[1]
-    visit_line = visit_time + "," + "Website visited (Chrome)" + "," + "\"" + visit_title + "\"" + "," + "\"" + visit_url + "\"" + "," + username + "," + "," + "," + visit_time + "," + "," + "Google Chrome history" + "," + "History" + "\n"
-
-    print(visit_line)
+    printy("\n  | [rB]BROWSER HISTORY@ |")
+    browswers_list = []
+    browswers_list.append(os.path.expanduser('~')+r'\AppData\Local\Microsoft\Edge\User Data\Default')
+    browswers_list.append(os.path.expanduser('~')+r'\AppData\Local\Google\Chrome\User Data\Default')
+    #firefox = os.path.expanduser('~')+r'\AppData\Local\Google\Chrome\User Data\Default'
+    for browser in browswers_list:
+        browser_name = browser.split('\\')[6]
+        printy('\n  | [rB]'+browser_name.upper()+'@ |\n')
+        
+        try:
+            files = os.listdir(browser)
+            history_db = os.path.join(browser, 'history')
+            db = sqlite3.connect(history_db)
+            cursor = db.cursor()
+            cursor.execute("SELECT url, title, datetime(urls.last_visit_time/1000000-11644473600, 'unixepoch') last_visit_time from urls")
+            browsing_data = (cursor.fetchall())
+            
+            for record in browsing_data:
+                progress()
+                es_date_time = datetime.strftime((datetime.strptime(record[2], '%Y-%m-%d %H:%M:%S')),'%d-%m-%Y - %H:%M:%S')
+                printy('  [rB]'+es_date_time+'@ >>> [gB]'+record[0]+'@')
+            cursor.close()
+        except:
+            printy("\n  Browser is un use! Close and try again! \n")
+            inputy("\n  [gI]Press Enter to try again or ctrl+c to close...@")
+            browser_history()
 
 # Dispositivos conectados
 def connected_devices():
@@ -136,16 +150,20 @@ def connected_devices():
     
 # Eventos de log 
 def log_events():
-    pass
+    p = subprocess.run("Get-EventLog -List", shell=True ,capture_output=True,text=True)#!!if windows shell=True!!
+
+    output = p.stdout
+    
+    print(output)
 
 ### HAPPY ENDING ###    
       
 # pretty script end after ctrl + c
 
-def exit_nice():
+def exit_nicelly():
     print('\n -------------------------- *** Succesfully ends!!! *** ------------------------- \n')
 
-def kill_key():
+def kill_nicelly():
     print('\n -------------------------- *** Keyboard Interrupted!!! *** -------------------------', end="\r")
     sleep(0.5)
     print("                                                                                                          ", end="\r")
@@ -153,17 +171,18 @@ def kill_key():
 ### MAIN ### 
 
 def main():
-    try:
-        #branch()
+    #try:
+        branch()
         #open_apps()
-        browser_history()
-    except:
-        print('\n  WTF!')
+        #browser_history()
+        #log_events()
+    #except:
+        #print('\n  WTF!')
 
 if __name__=="__main__":
     try:
         main()
     except KeyboardInterrupt:
-        kill_key()
+        kill_nicelly()
     finally:
-        exit_nice()
+        exit_nicelly()
