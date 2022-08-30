@@ -53,7 +53,23 @@ def progress():
             print('                                   ', end='\r')
     except:
         kill_nicelly()
-        sys.exit(1)    
+        sys.exit(1)
+
+def check_type(device):
+    devices = {
+        0: "Unknown",
+        1: "No Root Directory",
+        2: "Removable Disk",
+        3: "Local Disk",
+        4: "Network Drive",
+        5: "CD",
+        6: "RAM Disk"
+    }
+
+    for key in devices:
+        if (key == device):
+            dev_type = devices[key]
+    return dev_type
         
 # Fechas de cambio de ramas de registro (CurrentVersionRun)
 def branch():
@@ -91,6 +107,12 @@ def recent_files():
 
 # Programas instalados
 def installed_software():
+    app_list = set()
+    app_list_all = set()
+    year = []
+    month = []
+    day = []
+
     printy("\n  | [rB]INSTALLED SOFTWARE@ | \n")
     
     #$Apps += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # 32 Bit
@@ -98,12 +120,33 @@ def installed_software():
 
     for p in w.Win32_Product():
         progress()
-        print (" ", str(p.Caption))
+        app_list.add(p.Name)
+        es_date_time = p.InstallDate[0:]
+        for i in range(0, len(es_date_time)):
+            if i < 4:
+                year.append(es_date_time[i])
+            elif (i < 6 and i > 3):
+                month.append(es_date_time[i])
+            else:
+                day.append(es_date_time[i])
+        str_year = "".join(str(y) for y in year)
+        str_month = "".join(str(m) for m in month)
+        str_day = "".join(str(d) for d in day)
+        es_date_time = str_day+'/'+str_month+'/'+str_year
+        printy('  [rB]'+es_date_time+'@ >>> [gB]'+ str(p.Caption)+'@')
+        
+        year = []
+        month = []
+        day = []
+    
+    for inst in w.Win32_InstalledWin32Program ():
+        progress()
+        print('ALL: ', app_list_all.add(inst.Name))
     
     inputy("\n  [gI]Press Enter to continue...@")
     open_apps()
 
-# Programas abiertos
+# Programas abiertos - OK
 def open_apps():
     printy("\n  | [rB]OPEN APPS@ | \n")
     app_set = set()
@@ -117,7 +160,6 @@ def open_apps():
     inputy("\n  [gI]Press Enter to continue...@")
     browser_history()
 
-# Historial de navegación
 # Historial de navegación
 def browser_history():
     printy("\n  | [rB]BROWSER HISTORY@ |")
@@ -141,83 +183,62 @@ def browser_history():
                 progress()
                 es_date_time = datetime.strftime((datetime.strptime(record[2], '%Y-%m-%d %H:%M:%S')),'%d-%m-%Y - %H:%M:%S')
                 printy('  [rB]'+es_date_time+'@ >>> [gB]'+record[0]+'@')
-            cursor.close()
         except:
-            printy("\n  Browser is un use! Close and try again! \n")
-            inputy("\n  [gI]Press Enter to try again or ctrl+c to close...@")
-            browser_history()
+            pass
+    inputy("\n  [gI]Press Enter to continue...@")
+    connected_devices()
 
 # Dispositivos conectados
 def connected_devices():
+    printy("\n  | [rB]CONNECTED DEVICES@ |\n")
     today = datetime.today()
-    today = format(datetime.today.strftime("%d-%m-%Y - %H:%M:%S"))
-    print("NOW:", today)
+    today = today.strftime("%d-%m-%Y - %H:%M:%S")
+    print("  NOW:", today)
     if w.Win32_PhysicalMedia():
         for item in w.Win32_PhysicalMedia():
             if item.Name:
-                print("ITEM: ", item.Name)
+                print("  ITEM: ", item.Name)
     else:
         print("No Physical Media devices")
 
     for drive in w.Win32_DiskDrive():
-        print("DRIVE:", drive.Name)
+        print("  DRIVE:", drive.Name)
 
     for disk in w.Win32_LogicalDisk():
-        print("DISK: ", disk.Name)
-        print("DISK TYPE: ", hd_type(disk.DriveType))
+        print("  DISK: ", disk.Name)
+        print("  DISK TYPE: ", check_type(disk.DriveType))
 
     for usb in w.Win32_USBController():
-        print("USB: ", usb.Name)
-    
-def hd_type(h_type):
-    if(h_type == 0):
-        c_type = "Unknown"
-    elif(h_type == 1):
-        c_type = "No Root Directory"
-    elif(h_type == 2):
-        c_type = "Removable Disk"
-    elif(h_type == 3):
-        c_type = "Local Disk"
-    elif(h_type == 4):
-        c_type = "Network Drive"
-    elif(h_type == 5):
-        c_type = "Compact Disc"
-    elif(h_type == 6):
-        c_type = "RAM Disk"
-    return c_type
-    
+        print("  USB: ", usb.Name)
+        
+    inputy("\n  [gI]Press Enter to continue...@")
     log_events()
     
 # Eventos de log 
 def log_events():
-    #p = subprocess.run("Get-EventLog -List", shell=True ,capture_output=True,text=True)#!!if windows shell=True!!
-    #p = subprocess.run("Get-WinEvent -ListLog *", shell=True)
-    #print(p)
-    #output = p.stdout
-    #print(output)
-
+    printy("\n  | [rB]LOG EVENTS@ |\n")
     server = 'localhost'
     logtype = 'Application'
-    hand = win32evtlog.OpenEventLog(server,logtype)
-    flags = win32evtlog.EVENTLOG_SEQUENTIAL_READ | win32evtlog.EVENTLOG_BACKWARDS_READ
-    total = win32evtlog.GetNumberOfEventLogRecords(hand)
-    events = win32evtlog.ReadEventLog(hand,flags,0)
-    while True:
-        if events:
-            for event in events:
-                print ('Event Category:', event.EventCategory)
-                print ('Time Generated:', event.TimeGenerated)
-                print ('Source Name:', event.SourceName)
-                print ('Event ID:', event.EventID)
-                print ('Event Type:', event.EventType)
-                data = event.StringInserts
-                if data:
-                    print ('Event Data:')
-                else:
-                    pass
-
-    print ("Total number of Event record ",total)
-    print ("Log record read",len(events))
+    h = win32evtlog.OpenEventLog(None,'EventLogRegister')
+    flags = win32evtlog.EVENTLOG_BACKWARDS_READ | win32evtlog.EVENTLOG_SEQUENTIAL_READ
+    total = win32evtlog.GetNumberOfEventLogRecords(h)
+    num = 0
+    while 1:
+        events = win32evtlog.ReadEventLog(h,flags,0)
+        if not events:
+            break
+        for event in events:
+            es_date_time = event.TimeGenerated.strftime("%d-%m-%Y - %H:%M:%S")
+            printy('  [rB]'+es_date_time+'@ >>> [gB]'+str(event.EventID)+' - '+event.SourceName+'@')
+        num = num + len(events)
+        print ("  Log record read",len(events))
+    if total == num:
+        print ("\n  Total number of Event records ",total)
+        print ("  Log record read",len(events))
+    else:
+        print ("  Couldn't get all records - reported %d, but found %d" % (total, num))
+        print ("  (Note that some other app may have written records while we were running!)")
+    win32evtlog.CloseEventLog(h)
 
 ### HAPPY ENDING ###    
       
@@ -235,10 +256,11 @@ def kill_nicelly():
 
 def main():
     #try:
+    installed_software()
         #branch()
         #open_apps()
         #browser_history()
-    connected_devices()
+        #connected_devices()
         #log_events()
     #except:
         #print('\n  WTF!')
