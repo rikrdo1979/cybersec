@@ -5,18 +5,16 @@ import os
 import glob
 import time
 import datetime
+from datetime import datetime
  
 def search_datetime(path):
     path = path+'\\*'
     path = min(glob.glob(path, recursive=True), key=os.path.getmtime)
-    print(path)
     dtime = os.stat(path).st_ctime
-    format(datetime.fromtimestamp(dtime).strftime("%d/%m/%Y - %H:%M:%S"))
-    filer = os.path.basename(path)
-    print(filer)
-
-    
-    
+    c_time = os.path.getctime(path)
+    es_c_time = format(datetime.fromtimestamp(c_time).strftime("%d/%m/%Y - %H:%M:%S"))
+    #filer = os.path.basename(path)
+    print(es_c_time)
 
 def intalled_software():
     year = []
@@ -38,11 +36,12 @@ def intalled_software():
                 asubkey_name = winreg.EnumKey(aKey, i)
                 asubkey = winreg.OpenKey(aKey, asubkey_name)
                 name = winreg.QueryValueEx(asubkey, "DisplayName")[0]
-                if winreg.QueryValueEx(asubkey, "InstallLocation")[0]:
-                    path = winreg.QueryValueEx(asubkey, "InstallLocation")[0]
-                    search_datetime(path)
-                else:
-                    path = 'undefined'
+                #if winreg.QueryValueEx(asubkey, "InstallLocation")[0]:
+                    # if no datetime in the key
+                #    path = winreg.QueryValueEx(asubkey, "InstallSource")[0]
+                #    search_datetime(path)
+                #else:
+                #    path = 'undefined'
                 try:
                     es_date_time = winreg.QueryValueEx(asubkey, "InstallDate")[0]
                     for i in range(0, len(es_date_time)):
