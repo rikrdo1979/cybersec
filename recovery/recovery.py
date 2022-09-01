@@ -101,7 +101,7 @@ def branch():
 def recent_files():
     printy("\n  | [rB]RECENT ACCESSED FILES@ | \n")
     # get list of recent files
-    path = r'C:\Users\vagrant\AppData\Roaming\Microsoft\Windows\Recent'
+    path = os.path.expanduser('~')+r'\AppData\Roaming\Microsoft\Windows\Recent'
     # list all the files in the recent folder
     dir_list = os.listdir(path)
 
@@ -115,7 +115,6 @@ def recent_files():
     installed_software()
 
 # Programas instalados
-      
 def installed_software():
     printy("\n  | [rB]INSTALLED SOFTWARE@ | \n")
     
@@ -162,7 +161,7 @@ def installed_software():
     inputy("\n  [gI]Press Enter to continue...@")
     open_apps()
 
-# Programas abiertos - OK
+# Programas abiertos
 def open_apps():
     printy("\n  | [rB]OPEN APPS@ | \n")
     right_now()
@@ -198,10 +197,10 @@ def browser_history():
             
             for record in browsing_data:
                 progress()
-                es_date_time = datetime.strftime((datetime.strptime(record[2], '%Y/%m/%d %H:%M:%S')),'%d-%m-%Y - %H:%M:%S')
+                es_date_time = datetime.strftime((datetime.strptime(record[2], '%Y-%m-%d %H:%M:%S')),'%d/%m/%Y - %H:%M:%S')
                 printy('  [rB]'+es_date_time+'@ >>> [gB]'+record[0]+'@')
         except:
-            pass
+            continue
     inputy(enter2continue)
     connected_devices()
 
@@ -220,8 +219,7 @@ def connected_devices():
         print("  DRIVE:", drive.Name)
 
     for disk in w.Win32_LogicalDisk():
-        print("  DISK: ", disk.Name)
-        print("  DISK TYPE: ", check_type(disk.DriveType))
+        print("  "+disk.Name+" "+check_type(disk.DriveType))
 
     for usb in w.Win32_USBController():
         print("  USB: ", usb.Name)
@@ -232,6 +230,7 @@ def connected_devices():
 # Eventos de log 
 def log_events():
     printy("\n  | [rB]LOG EVENTS@ |\n")
+    uniq_list = set()
     server = 'localhost'
     logtype = 'Application'
     h = win32evtlog.OpenEventLog(None,'EventLogRegister')
