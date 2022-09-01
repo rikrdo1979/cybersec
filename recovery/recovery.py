@@ -41,7 +41,15 @@ from winreg import (
 
 # Initializing the wmi constructor
 w = wmi.WMI()
+enter2continue = "\n  [gI]Press Enter to continue...@"
 
+# just... give date time now
+def right_now():
+    today = datetime.today()
+    today = today.strftime("%d/%m/%Y - %H:%M:%S")
+    printy("  [rB]"+today+"@\n")
+
+# animation to give some feedback when system is working
 def progress():
     #animation = ["⢿", "⣻", "⣽", "⣾", "⣷", "⣯", "⣟", "⡿"]
     #animation = ['|', '/', '-', '\\']
@@ -55,6 +63,7 @@ def progress():
         kill_nicelly()
         sys.exit(1)
 
+# function to check and list devices
 def check_type(device):
     devices = {
         0: "Unknown",
@@ -80,10 +89,10 @@ def branch():
             for i in range(num_of_values):
                 values = EnumValue(hosts_key, i)
                 if (values[0] == "InstallDate"):
-                    dt_install = format(datetime.fromtimestamp(values[1]).strftime("%d-%m-%Y - %H:%M:%S"))
+                    dt_install = format(datetime.fromtimestamp(values[1]).strftime("%d/%m/%Y - %H:%M:%S"))
                     print('  Installed date: ', dt_install)                
                     #print("\n\n ", values)
-    inputy("\n  [gI]Press Enter to continue...@")
+    inputy(enter2continue)
     recent_files()
     
     #Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\* | select-object DisplayName
@@ -99,56 +108,64 @@ def recent_files():
     for files in dir_list:
         progress()
         access_time = os.path.getatime(path+'//'+files)
-        last_access = format(datetime.fromtimestamp(access_time).strftime("%d-%m-%Y - %H:%M:%S"))
-        print (" ",last_access," >>> ", files)
+        last_access = format(datetime.fromtimestamp(access_time).strftime("%d/%m/%Y - %H:%M:%S"))
+        printy('  [rB]'+last_access+'@ >>> [gB]'+ files+'@')
 
-    inputy("\n  [gI]Press Enter to continue...@")
+    inputy(enter2continue)
     installed_software()
 
 # Programas instalados
+      
 def installed_software():
-    app_list = set()
-    app_list_all = set()
+    printy("\n  | [rB]INSTALLED SOFTWARE@ | \n")
+    
     year = []
     month = []
     day = []
 
-    printy("\n  | [rB]INSTALLED SOFTWARE@ | \n")
-    
-    #$Apps += Get-ItemProperty "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*" # 32 Bit
-    #$Apps += Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*"             # 64 Bit
+    locations = {'winreg.KEY_WOW64_32KEY' : 'winreg.HKEY_LOCAL_MACHINE'  , 'winreg.KEY_WOW64_64KEY' : 'winreg.HKEY_LOCAL_MACHINE' , '0' : 'winreg.HKEY_CURRENT_USER'}
 
-    for p in w.Win32_Product():
-        progress()
-        app_list.add(p.Name)
-        es_date_time = p.InstallDate[0:]
-        for i in range(0, len(es_date_time)):
-            if i < 4:
-                year.append(es_date_time[i])
-            elif (i < 6 and i > 3):
-                month.append(es_date_time[i])
-            else:
-                day.append(es_date_time[i])
-        str_year = "".join(str(y) for y in year)
-        str_month = "".join(str(m) for m in month)
-        str_day = "".join(str(d) for d in day)
-        es_date_time = str_day+'/'+str_month+'/'+str_year
-        printy('  [rB]'+es_date_time+'@ >>> [gB]'+ str(p.Caption)+'@')
-        
-        year = []
-        month = []
-        day = []
-    
-    for inst in w.Win32_InstalledWin32Program ():
-        progress()
-        print('ALL: ', app_list_all.add(inst.Name))
-    
+    for loc in locations:
+        aReg = winreg.ConnectRegistry(None, eval(locations[loc]))
+        aKey = winreg.OpenKey(aReg, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+                              0, winreg.KEY_READ | eval(loc))
+     
+        count_subkey = winreg.QueryInfoKey(aKey)[0]
+
+        for i in range(count_subkey):
+            try:
+                asubkey_name = winreg.EnumKey(aKey, i)
+                asubkey = winreg.OpenKey(aKey, asubkey_name)
+                name = winreg.QueryValueEx(asubkey, "DisplayName")[0]
+                try:
+                    es_date_time = winreg.QueryValueEx(asubkey, "InstallDate")[0]
+                    for i in range(0, len(es_date_time)):
+                        if i < 4:
+                            year.append(es_date_time[i])
+                        elif (i < 6 and i > 3):
+                            month.append(es_date_time[i])
+                        else:
+                            day.append(es_date_time[i])
+                    str_year = "".join(str(y) for y in year)
+                    str_month = "".join(str(m) for m in month)
+                    str_day = "".join(str(d) for d in day)
+                    es_date_time = str_day+'/'+str_month+'/'+str_year                  
+                    year = []
+                    month = []
+                    day = []
+                except EnvironmentError:
+                    installed = 'undefined'
+            except EnvironmentError:
+                continue
+            printy('  [rB]'+es_date_time+'@ >>> [gB]'+ name+'@')
+            
     inputy("\n  [gI]Press Enter to continue...@")
     open_apps()
 
 # Programas abiertos - OK
 def open_apps():
     printy("\n  | [rB]OPEN APPS@ | \n")
+    right_now()
     app_set = set()
     # Iterating through all the running processes
     for process in w.Win32_Process():
@@ -157,7 +174,7 @@ def open_apps():
             print(" " , process.Name)
         app_set.add(process.Name)
     
-    inputy("\n  [gI]Press Enter to continue...@")
+    inputy(enter2continue)
     browser_history()
 
 # Historial de navegación
@@ -181,19 +198,17 @@ def browser_history():
             
             for record in browsing_data:
                 progress()
-                es_date_time = datetime.strftime((datetime.strptime(record[2], '%Y-%m-%d %H:%M:%S')),'%d-%m-%Y - %H:%M:%S')
+                es_date_time = datetime.strftime((datetime.strptime(record[2], '%Y/%m/%d %H:%M:%S')),'%d-%m-%Y - %H:%M:%S')
                 printy('  [rB]'+es_date_time+'@ >>> [gB]'+record[0]+'@')
         except:
             pass
-    inputy("\n  [gI]Press Enter to continue...@")
+    inputy(enter2continue)
     connected_devices()
 
 # Dispositivos conectados
 def connected_devices():
     printy("\n  | [rB]CONNECTED DEVICES@ |\n")
-    today = datetime.today()
-    today = today.strftime("%d-%m-%Y - %H:%M:%S")
-    print("  NOW:", today)
+    right_now()
     if w.Win32_PhysicalMedia():
         for item in w.Win32_PhysicalMedia():
             if item.Name:
@@ -211,7 +226,7 @@ def connected_devices():
     for usb in w.Win32_USBController():
         print("  USB: ", usb.Name)
         
-    inputy("\n  [gI]Press Enter to continue...@")
+    inputy(enter2continue)
     log_events()
     
 # Eventos de log 
@@ -228,13 +243,11 @@ def log_events():
         if not events:
             break
         for event in events:
-            es_date_time = event.TimeGenerated.strftime("%d-%m-%Y - %H:%M:%S")
+            es_date_time = event.TimeGenerated.strftime("%d/%m/%Y - %H:%M:%S")
             printy('  [rB]'+es_date_time+'@ >>> [gB]'+str(event.EventID)+' - '+event.SourceName+'@')
         num = num + len(events)
-        print ("  Log record read",len(events))
     if total == num:
         print ("\n  Total number of Event records ",total)
-        print ("  Log record read",len(events))
     else:
         print ("  Couldn't get all records - reported %d, but found %d" % (total, num))
         print ("  (Note that some other app may have written records while we were running!)")
@@ -256,8 +269,9 @@ def kill_nicelly():
 
 def main():
     #try:
-    installed_software()
-        #branch()
+    branch()
+        #recent_files
+        #installed_software()
         #open_apps()
         #browser_history()
         #connected_devices()
